@@ -1,21 +1,21 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    domains: ["images.unsplash.com", "via.placeholder.com"], // Revisar si necesitas todas
-    unoptimized: true, // Solo usa esto si realmente no optimizas imágenes con Next.js
+    domains: ["images.unsplash.com", "via.placeholder.com"], 
+    unoptimized: true, 
   },
   env: {
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
   },
   eslint: {
-    ignoreDuringBuilds: false, // Mejor mantenerlo en `false` para detectar errores antes del despliegue
+    ignoreDuringBuilds: false,
   },
   typescript: {
-    ignoreBuildErrors: false, // Mismo caso, mantenerlo en `false` para evitar errores en producción
+    ignoreBuildErrors: false,
   },
-  reactStrictMode: true, // Esto mejora el rendimiento y la depuración en desarrollo
+  reactStrictMode: true,
   generateBuildId: async () => {
-    return "my-build-id"; // Ayuda a Netlify a gestionar caché correctamente
+    return "my-build-id"; 
   },
 };
 
