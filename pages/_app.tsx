@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import { supabase } from "@/lib/supabase"; // Asegúrate de que supabase esté bien configurado
+import { supabase } from "@/lib/supabase"; 
 
 function MyApp({ Component, pageProps }) {
   const [session, setSession] = useState(null);
