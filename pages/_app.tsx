@@ -1,25 +1,23 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase"; // Asegúrate de que supabase esté bien configurado
 
-export default function MyApp({ Component, pageProps }) {
+function MyApp({ Component, pageProps }) {
   const [session, setSession] = useState(null);
   const router = useRouter();
 
   useEffect(() => {
-    const getSession = async () => {
+    const checkSession = async () => {
       const { data } = await supabase.auth.getSession();
       setSession(data.session);
 
-      // Redirigir a login si no hay sesión activa
       if (!data.session) {
-        router.push("/login");
+        router.push("/login"); // Si no hay sesión, redirige a login
       }
     };
 
-    getSession();
+    checkSession();
 
-    // Detectar cambios en la sesión (logout, login)
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
     });
@@ -31,3 +29,5 @@ export default function MyApp({ Component, pageProps }) {
 
   return <Component {...pageProps} />;
 }
+
+export default MyApp;
