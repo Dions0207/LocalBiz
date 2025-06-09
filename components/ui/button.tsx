@@ -12,13 +12,13 @@ const buttonVariants = cva(
         default: "bg-primary text-white hover:bg-primary/90",
         outline: "border border-gray-300 bg-white hover:bg-gray-100",
         ghost: "hover:bg-gray-200",
-        destructive: "bg-red-600 text-white hover:bg-red-700", // Corrección agregada
+        destructive: "bg-red-600 text-white hover:bg-red-700",
       },
       size: {
         default: "h-10 px-4",
         sm: "h-9 px-3",
         lg: "h-11 px-6",
-        icon: "h-10 w-10", // Agregado para soportar íconos
+        icon: "h-10 w-10",
       },
     },
     defaultVariants: {
@@ -45,12 +45,31 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       if (actionType === "navigate" && route) {
         router.push(route);
       } else if (actionType === "pay") {
-        const response = await fetch("/api/checkout", { method: "POST" });
-        const { url } = await response.json();
-        window.location.href = url;
+        try {
+            const response = await fetch("/api/checkout", { method: "POST" });
+            const { url } = await response.json();
+            if (url) {
+                window.location.href = url;
+            } else {
+                alert("Hubo un problema al iniciar el pago.");
+            }
+        } catch (error) {
+            console.error("Error en el checkout:", error);
+            alert("Error al procesar la solicitud de pago.");
+        }
       } else if (actionType === "subscribe") {
-        const { user } = await supabase.auth.signInWithOAuth({ provider: "google" });
-        if (user) alert("¡Suscripción exitosa!");
+        // --- CÓDIGO CORREGIDO PARA EL ERROR DE SUPABASE ---
+        const { data, error } = await supabase.auth.signInWithOAuth({ provider: "google" });
+        
+        if (error) {
+          console.error("Error en el login con Google:", error);
+          alert("Hubo un error al intentar suscribirse.");
+        } else {
+          // El inicio de sesión se ha iniciado, la redirección se maneja automáticamente por Supabase
+          // No es necesario hacer nada más aquí, ni siquiera una alerta, 
+          // ya que la página se recargará tras el login.
+        }
+        // --- FIN DE LA CORRECCIÓN ---
       } else if (actionType === "back") {
         window.history.back();
       }
