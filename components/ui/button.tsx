@@ -74,7 +74,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         window.history.back();
       }
     };
-    
+
     return (
       <Comp
         className={buttonVariants({ variant, size, className })}
