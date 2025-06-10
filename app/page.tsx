@@ -1,5 +1,9 @@
-import MobileFirstLocalBiz from "@/mobile-first-localbiz"
+import MobileFirstLocalBiz from "../mobile-first-localbiz"
 
 export default function Home() {
-  return <MobileFirstLocalBiz />
+  return (
+    <main>
+      <MobileFirstLocalBiz />
+    </main>
+  )
 }
