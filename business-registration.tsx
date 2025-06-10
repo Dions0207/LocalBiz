@@ -54,7 +54,6 @@ export default function BusinessRegistration({ onRegisterSuccess, onCancel }: Bu
       case "logoUrl":
       case "coverImageUrl":
         if (value.trim() && !/^https?:\/\/\S+\.(png|jpg|jpeg|gif|svg|webp)$/i.test(value)) {
-          // Added webp
           fieldError = "URL de imagen inválida (solo .png, .jpg, .jpeg, .gif, .svg, .webp)."
         }
         break
@@ -116,7 +115,6 @@ export default function BusinessRegistration({ onRegisterSuccess, onCancel }: Bu
         body: JSON.stringify({
           ...formData,
           owner_id: "current_user_id_placeholder", // TODO: Replace with actual user ID from auth context
-          // Add other default fields as per your Supabase schema if not handled by API route
         }),
       })
 
@@ -127,7 +125,7 @@ export default function BusinessRegistration({ onRegisterSuccess, onCancel }: Bu
       }
 
       console.log("Business registered successfully:", result.business)
-      onRegisterSuccess(result.business) // Pass the actual registered business data
+      onRegisterSuccess(result.business)
     } catch (error: any) {
       console.error("Error during business registration:", error)
       setGeneralError(error.message || "Error al registrar el negocio. Intenta de nuevo.")

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react" // Added useCallback
+import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -32,8 +32,7 @@ import {
 } from "lucide-react"
 import { BackButton } from "@/components/back-button"
 
-// Re-using Business interface from lib/supabase.ts for consistency
-import type { Business } from "@/lib/supabase"
+import type { Business } from "@/lib/supabase" // Assuming you have this type defined in lib/supabase.ts
 
 export default function CustomerDashboard() {
   const { user, switchToBusinessMode, logout } = useAuth()
@@ -46,7 +45,7 @@ export default function CustomerDashboard() {
   const [affiliateEarnings, setAffiliateEarnings] = useState(247.85)
   const [referralCount, setReferralCount] = useState(8)
   const [copiedCode, setCopiedCode] = useState(false)
-  const [businesses, setBusinesses] = useState<Business[]>([]) // State to hold fetched businesses
+  const [businesses, setBusinesses] = useState<Business[]>([])
   const [loadingBusinesses, setLoadingBusinesses] = useState(true)
   const [businessError, setBusinessError] = useState<string | null>(null)
 
@@ -75,7 +74,7 @@ export default function CustomerDashboard() {
   }, [fetchBusinesses])
 
   const categories = [
-    { id: "all", name: "Todos", icon: "🏪", count: 0 }, // Count will be dynamic
+    { id: "all", name: "Todos", icon: "🏪", count: 0 },
     { id: "food", name: "Comida", icon: "🍕", count: 0 },
     { id: "retail", name: "Retail", icon: "👕", count: 0 },
     { id: "services", name: "Servicios", icon: "🔧", count: 0 },
@@ -103,7 +102,6 @@ export default function CustomerDashboard() {
 
   const copyReferralCode = () => {
     if (user?.referral_code) {
-      // Changed to referral_code
       navigator.clipboard.writeText(user.referral_code)
       setCopiedCode(true)
       setTimeout(() => setCopiedCode(false), 2000)
@@ -111,7 +109,7 @@ export default function CustomerDashboard() {
   }
 
   const shareReferralLink = () => {
-    const referralLink = `https://localbiz.app/ref/${user?.referral_code}` // Changed to referral_code
+    const referralLink = `https://localbiz.app/ref/${user?.referral_code}`
 
     if (navigator.share) {
       navigator.share({
@@ -265,7 +263,7 @@ export default function CustomerDashboard() {
             >
               <div className="relative">
                 <img
-                  src={business.cover_image_url || "/placeholder.svg?height=200&width=300"} // Use cover_image_url
+                  src={business.cover_image_url || "/placeholder.svg?height=200&width=300"}
                   alt={business.name}
                   className="w-full h-32 object-cover rounded-t-lg"
                 />
@@ -285,7 +283,7 @@ export default function CustomerDashboard() {
                   />
                 </Button>
                 <div className="absolute bottom-2 right-2 bg-black/70 text-white px-2 py-1 rounded text-xs">
-                  📍 {business.address ? "Cerca" : "Ubicación no disponible"} {/* Simplified distance */}
+                  📍 {business.address ? "Cerca" : "Ubicación no disponible"}
                 </div>
               </div>
 
@@ -301,26 +299,19 @@ export default function CustomerDashboard() {
 
                 <p className="text-sm text-gray-600 mb-3 line-clamp-2">{business.description}</p>
 
-                {/* No direct promotion field in DB, can be added later */}
-                {/* {business.promotion && (
-                  <div className="bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-lg p-2 mb-3">
-                    <p className="text-sm font-bold text-red-700">{business.promotion}</p>
-                  </div>
-                )} */}
-
                 <div className="flex items-center justify-between text-sm text-gray-600 mb-3">
                   <div className="flex items-center">
                     <Clock className="h-4 w-4 mr-1" />
-                    <span>Horario no disponible</span> {/* Placeholder for hours */}
+                    <span>Horario no disponible</span>
                   </div>
                   <div className="flex items-center space-x-2">
-                    {business.accepts_crypto && ( // Changed to accepts_crypto
+                    {business.accepts_crypto && (
                       <Badge variant="outline" className="text-xs bg-yellow-50">
                         <Bitcoin className="h-3 w-3 mr-1" />
                         USDT
                       </Badge>
                     )}
-                    {business.accepts_cards && ( // Changed to accepts_cards
+                    {business.accepts_cards && (
                       <Badge variant="outline" className="text-xs bg-blue-50">
                         <CreditCard className="h-3 w-3 mr-1" />
                         USD
@@ -421,11 +412,10 @@ export default function CustomerDashboard() {
               </div>
               <div className="flex items-center justify-between p-2 bg-purple-50 rounded">
                 <span className="text-sm">Pago mínimo:</span>
-                <Badge className="bg-purple-600">$10 USDT</Badge>
+                <Badge className="bg-purple-600">&gt; $10 USDT</Badge>
               </div>
             </div>
-          </div>
-        </CardContent>
+          </CardContent>
       </Card>
     </div>
   )
@@ -463,14 +453,13 @@ export default function CustomerDashboard() {
             </div>
             <div>
               <label className="text-sm font-medium text-gray-600">Código de Referido</label>
-              <p className="font-semibold">{user?.referral_code}</p> {/* Changed to referral_code */}
+              <p className="font-semibold">{user?.referral_code}</p>
             </div>
             <div>
               <label className="text-sm font-medium text-gray-600">Miembro desde</label>
               <p className="font-semibold">
                 {user?.created_at ? new Date(user.created_at).toLocaleDateString() : "N/A"}
-              </p>{" "}
-              {/* Changed to created_at */}
+              </p>
             </div>
           </div>
 

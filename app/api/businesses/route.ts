@@ -6,29 +6,24 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const category = searchParams.get("category")
     const search = searchParams.get("search")
-    const userId = searchParams.get("userId") // Get userId for specific business lookup
+    const userId = searchParams.get("userId")
 
     let query = supabase.from("businesses").select("*")
 
-    // Filter by user if provided (for business dashboard)
     if (userId) {
       query = query.eq("owner_id", userId)
     } else {
-      // Only show active businesses for public view (customer dashboard)
       query = query.eq("status", "active")
     }
 
-    // Filter by category
     if (category && category !== "all") {
       query = query.eq("category", category)
     }
 
-    // Search functionality
     if (search) {
       query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`)
     }
 
-    // Order by featured first, then by rating
     query = query.order("featured", { ascending: false }).order("rating", { ascending: false })
 
     const { data: businesses, error } = await query
@@ -55,9 +50,6 @@ export async function POST(request: NextRequest) {
     // if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     // const owner_id = user.id;
 
-    // For demonstration, let's assume owner_id is passed or derived from a simple auth context
-    // For now, we'll use a dummy ID or expect it from the frontend (which is not ideal for security)
-    // A better approach would be to get it from the server-side session.
     const owner_id = businessData.owner_id || "dummy_owner_id_123" // Replace with actual user ID logic
 
     const { data: business, error } = await supabase
@@ -65,16 +57,15 @@ export async function POST(request: NextRequest) {
       .insert([
         {
           ...businessData,
-          owner_id: owner_id, // Ensure owner_id is set
-          status: "pending", // Businesses start as pending
+          owner_id: owner_id,
+          status: "pending",
           verified: false,
           featured: false,
           rating: 0,
           review_count: 0,
           subscription_plan: "free",
-          // Ensure logo_url and cover_image_url are passed from businessData
-          logo_url: businessData.logoUrl,
-          cover_image_url: businessData.coverImageUrl,
+          logo_url: businessData.logoUrl, // Map frontend field to DB field
+          cover_image_url: businessData.coverImageUrl, // Map frontend field to DB field
         },
       ])
       .select()

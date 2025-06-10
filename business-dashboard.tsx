@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input"
 
 import type React from "react"
 
-import { useState, useEffect, useCallback } from "react" // Added useCallback
+import { useState, useEffect, useCallback } from "react"
 import { useAuth } from "./auth-system"
 import BusinessRegistration from "./business-registration"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -51,13 +51,13 @@ interface BusinessData {
   email: string
   website?: string
   description: string
-  owner_id: string // Changed to owner_id to match Supabase schema
+  owner_id: string
   status: "active" | "pending" | "suspended"
-  created_at: string // Changed to created_at to match Supabase schema
-  logo_url?: string // Changed to logo_url
-  cover_image_url?: string // Changed to cover_image_url
+  created_at: string
+  logo_url?: string
+  cover_image_url?: string
   rating?: number
-  review_count?: number // Changed to review_count
+  review_count?: number
 }
 
 interface AdCampaign {
@@ -73,7 +73,7 @@ interface AdCampaign {
   endDate: Date
   targetAudience: string
   adContent: string
-  adBannerUrl?: string // New field for ad banner URL
+  adBannerUrl?: string
   createdAt: Date
 }
 
@@ -95,18 +95,16 @@ export default function BusinessDashboard() {
   const [activeTab, setActiveTab] = useState("overview")
   const [showRegistrationForm, setShowRegistrationForm] = useState(false)
   const [showCreateAdForm, setShowCreateAdForm] = useState(false)
-  const [currentBusiness, setCurrentBusiness] = useState<BusinessData | null>(null) // Now holds the single business
-  const [adCampaigns, setAdCampaigns] = useState<AdCampaign[]>([]) // Simular campañas de anuncios
+  const [currentBusiness, setCurrentBusiness] = useState<BusinessData | null>(null)
+  const [adCampaigns, setAdCampaigns] = useState<AdCampaign[]>([])
 
-  // New state for AI banner generation
   const [aiBannerPrompt, setAiBannerPrompt] = useState("")
   const [generatedBannerUrl, setGeneratedBannerUrl] = useState("")
   const [isGeneratingBanner, setIsGeneratingBanner] = useState(false)
   const [bannerGenerationError, setBannerGenerationError] = useState<string | null>(null)
 
-  // Function to fetch business data
   const fetchBusiness = useCallback(async () => {
-    if (!user?.id) return // Ensure user ID is available
+    if (!user?.id) return
 
     try {
       console.log(`Fetching business for user ID: ${user.id}`)
@@ -116,29 +114,26 @@ export default function BusinessDashboard() {
       if (response.ok && result.businesses && result.businesses.length > 0) {
         setCurrentBusiness(result.businesses[0])
         console.log("Business loaded:", result.businesses[0])
-        // If business is loaded, hide registration form
         setShowRegistrationForm(false)
       } else {
         console.log("No business found for this user or error fetching:", result.error || "No businesses array")
         setCurrentBusiness(null)
-        // If no business, show registration form
         setShowRegistrationForm(true)
       }
     } catch (error) {
       console.error("Failed to fetch business:", error)
       setCurrentBusiness(null)
-      setShowRegistrationForm(true) // Show form on error too
+      setShowRegistrationForm(true)
     }
   }, [user])
 
   useEffect(() => {
     if (user && user.userType === "business") {
       fetchBusiness()
-      // Simulate ad campaigns for now, will fetch from API later
       setAdCampaigns([
         {
           id: "ad_001",
-          businessId: "biz_001", // Placeholder
+          businessId: "biz_001",
           name: "Campaña de Lanzamiento",
           status: "active",
           budget: 500,
@@ -154,7 +149,7 @@ export default function BusinessDashboard() {
         },
       ])
     }
-  }, [user, fetchBusiness]) // Add fetchBusiness to dependencies
+  }, [user, fetchBusiness])
 
   const handleBusinessRegistered = (newBusinessData: BusinessData) => {
     setCurrentBusiness(newBusinessData)
@@ -168,7 +163,7 @@ export default function BusinessDashboard() {
     const form = e.target as HTMLFormElement
     const newAd: AdCampaign = {
       id: `ad_${Date.now()}`,
-      businessId: currentBusiness?.id || "unknown", // Use actual business ID
+      businessId: currentBusiness?.id || "unknown",
       name: (form.elements.namedItem("adName") as HTMLInputElement).value,
       status: "active",
       budget: Number.parseFloat((form.elements.namedItem("adBudget") as HTMLInputElement).value),
@@ -239,7 +234,6 @@ export default function BusinessDashboard() {
     )
   }
 
-  // If no business registered and not currently showing the registration form
   if (!currentBusiness && !showRegistrationForm) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-4">
@@ -270,7 +264,6 @@ export default function BusinessDashboard() {
     )
   }
 
-  // If showing the registration form
   if (showRegistrationForm) {
     console.log("BusinessDashboard: showRegistrationForm is now true. Rendering BusinessRegistration.")
     return (
@@ -286,7 +279,6 @@ export default function BusinessDashboard() {
     )
   }
 
-  // If showing the create ad form
   if (showCreateAdForm) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex items-center justify-center p-4">
@@ -442,7 +434,6 @@ export default function BusinessDashboard() {
     )
   }
 
-  // Main dashboard if a business is registered
   return (
     <div className="flex min-h-screen w-full flex-col bg-gray-100">
       <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b bg-white px-4 shrink-0 md:px-6">
