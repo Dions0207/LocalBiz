@@ -717,7 +717,6 @@ export default function EnhancedLocalBusinessApp() {
                     </div>
                     <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
                       <h4 className="font-semibold text-sm">⚡ Sin comisiones</h4>
-                      {/* --- CORRECCIÓN FINAL --- */}
                       <p className="text-xs text-gray-600">Pagos >$50 USDT</p>
                     </div>
                     <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
