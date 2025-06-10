@@ -222,7 +222,6 @@ export default function EnhancedLocalBusinessApp() {
                 </div>
               </div>
               <div className="hidden md:flex items-center space-x-2">
-                 {/* La variante 'secondary' es válida para Badge, así que la dejamos */}
                 <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
                   <Bitcoin className="h-3 w-3 mr-1" />
                   USDT: ${usdtPrice.toFixed(3)}
@@ -234,12 +233,10 @@ export default function EnhancedLocalBusinessApp() {
             </div>
 
             <div className="flex items-center space-x-2">
-               {/* --- CORRECCIÓN 1 --- */}
               <Button variant="outline" size="sm" className="bg-white/20 text-white border-white/30">
                 <Wallet className="h-4 w-4 mr-2" />
                 P2P Exchange
               </Button>
-               {/* --- CORRECCIÓN 2 --- */}
               <Button variant="outline" size="sm" className="bg-white/20 text-white border-white/30">
                 <Plus className="h-4 w-4 mr-2" />
                 Registrar Negocio
@@ -258,11 +255,9 @@ export default function EnhancedLocalBusinessApp() {
                 className="pl-10 bg-white/90 border-white/30"
               />
             </div>
-             {/* --- CORRECCIÓN 3 --- */}
             <Button variant="outline" size="icon" className="bg-white/20 text-white border-white/30">
               <Filter className="h-4 w-4" />
             </Button>
-             {/* --- CORRECCIÓN 4 --- */}
             <Button variant="outline" size="icon" className="bg-white/20 text-white border-white/30">
               <MapPin className="h-4 w-4" />
             </Button>
@@ -722,6 +717,7 @@ export default function EnhancedLocalBusinessApp() {
                     </div>
                     <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
                       <h4 className="font-semibold text-sm">⚡ Sin comisiones</h4>
+                      {/* --- CORRECCIÓN FINAL --- */}
                       <p className="text-xs text-gray-600">Pagos >$50 USDT</p>
                     </div>
                     <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
