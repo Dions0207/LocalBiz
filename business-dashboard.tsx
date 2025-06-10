@@ -122,6 +122,11 @@ export default function BusinessDashboard() {
   const [editMode, setEditMode] = useState(false)
   const [adCampaigns, setAdCampaigns] = useState<AdCampaign[]>([]) // State for ad campaigns
 
+  // Log para depurar el estado de showRegistrationForm
+  useEffect(() => {
+    console.log("BusinessDashboard: showRegistrationForm is now", showRegistrationForm)
+  }, [showRegistrationForm])
+
   useEffect(() => {
     if (user?.id) {
       fetchUserBusinesses(user.id)
@@ -212,6 +217,7 @@ export default function BusinessDashboard() {
   }
 
   const handleBusinessRegistered = (newBusiness: BusinessData) => {
+    console.log("handleBusinessRegistered called with:", newBusiness)
     setUserBusinesses((prev) => [...prev, newBusiness])
     setShowRegistrationForm(false)
     setSelectedBusiness(newBusiness) // Automatically select the newly registered business
@@ -501,6 +507,7 @@ export default function BusinessDashboard() {
   )
 
   if (loading) {
+    console.log("BusinessDashboard: Loading state active.")
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <p>Cargando tu dashboard de negocio...</p>
@@ -509,6 +516,7 @@ export default function BusinessDashboard() {
   }
 
   if (showRegistrationForm) {
+    console.log("BusinessDashboard: Rendering BusinessRegistration form.")
     return (
       <div className="min-h-screen bg-gray-50 py-8">
         <div className="max-w-4xl mx-auto px-4">
@@ -528,6 +536,7 @@ export default function BusinessDashboard() {
   }
 
   if (showAdCreationForm) {
+    console.log("BusinessDashboard: Rendering Ad Creation form.")
     return (
       <div className="min-h-screen bg-gray-50 py-8">
         <div className="max-w-4xl mx-auto px-4">{renderAdCreationForm()}</div>
@@ -536,6 +545,7 @@ export default function BusinessDashboard() {
   }
 
   if (userBusinesses.length === 0) {
+    console.log("BusinessDashboard: No businesses found for user. Showing registration prompt.")
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 p-4 text-center">
         <Store className="h-24 w-24 text-blue-600 mb-6" />
@@ -543,7 +553,13 @@ export default function BusinessDashboard() {
         <p className="text-xl text-gray-700 mb-8">
           Parece que aún no tienes un negocio registrado. ¡Es hora de empezar a vender!
         </p>
-        <Button size="lg" onClick={() => setShowRegistrationForm(true)}>
+        <Button
+          size="lg"
+          onClick={() => {
+            console.log("Button 'Registrar mi Primer Negocio' clicked. Setting showRegistrationForm to true.")
+            setShowRegistrationForm(true)
+          }}
+        >
           <PlusCircle className="h-5 w-5 mr-2" />
           Registrar mi Primer Negocio
         </Button>
@@ -556,6 +572,7 @@ export default function BusinessDashboard() {
 
   // If there are businesses, display the dashboard for the first one (or selected one)
   const currentBusiness = selectedBusiness || userBusinesses[0]
+  console.log("BusinessDashboard: Displaying dashboard for business:", currentBusiness?.name)
 
   const renderOverview = () => (
     <div className="space-y-6">
@@ -1102,7 +1119,13 @@ export default function BusinessDashboard() {
                 ))}
               </select>
             )}
-            <Button variant="outline" onClick={() => setShowRegistrationForm(true)}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                console.log("Button 'Registrar Otro Negocio' clicked. Setting showRegistrationForm to true.")
+                setShowRegistrationForm(true)
+              }}
+            >
               <PlusCircle className="h-4 w-4 mr-2" />
               Registrar Otro Negocio
             </Button>
@@ -1236,7 +1259,10 @@ export default function BusinessDashboard() {
             <Button
               size="lg"
               className="w-full bg-blue-600 hover:bg-blue-700"
-              onClick={() => setShowAdCreationForm(true)}
+              onClick={() => {
+                console.log("Button 'Crear Nueva Campaña de Anuncio' clicked. Setting showAdCreationForm to true.")
+                setShowAdCreationForm(true)
+              }}
             >
               <PlusCircle className="h-5 w-5 mr-2" />
               Crear Nueva Campaña de Anuncio
