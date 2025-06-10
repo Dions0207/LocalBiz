@@ -1,26 +1,14 @@
 "use client"
 
-import type React from "react"
-
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
 
-export function BackButton({ href, children }: { href?: string; children?: React.ReactNode }) {
+export function BackButton() {
   const router = useRouter()
-
-  const handleBack = () => {
-    if (href) {
-      router.push(href)
-    } else {
-      router.back()
-    }
-  }
-
   return (
-    <Button variant="ghost" onClick={handleBack}>
-      <ArrowLeft className="mr-2 h-4 w-4" />
-      {children || "Atrás"}
+    <Button variant="ghost" size="icon" className="text-white" onClick={() => router.back()} aria-label="Volver atrás">
+      <ArrowLeft className="h-5 w-5" />
     </Button>
   )
 }
