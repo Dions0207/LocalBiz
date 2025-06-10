@@ -124,11 +124,40 @@ export default function CustomerDashboard() {
     setFavorites((prev) => (prev.includes(businessId) ? prev.filter((id) => id !== businessId) : [...prev, businessId]))
   }
 
+  const shareBusiness = (business: any) => {
+    const businessLink = `https://localbiz.app/business/${business.id}`
+    if (navigator.share) {
+      navigator.share({
+        title: `Descubre ${business.name} en LocalBiz`,
+        text: business.description,
+        url: businessLink,
+      })
+    } else {
+      navigator.clipboard.writeText(businessLink)
+      alert(`¡Link de ${business.name} copiado al portapapeles!`)
+    }
+  }
+
   const copyReferralCode = () => {
     if (user?.referralCode) {
       navigator.clipboard.writeText(user.referralCode)
       setCopiedCode(true)
       setTimeout(() => setCopiedCode(false), 2000)
+    }
+  }
+
+  const shareReferralLink = () => {
+    const referralLink = `https://localbiz.app/ref/${user?.referralCode}`
+
+    if (navigator.share) {
+      navigator.share({
+        title: "LocalBiz - ¡Únete y gana!",
+        text: "¡Únete a LocalBiz y descubre negocios increíbles cerca de ti! Usa mi código para empezar a ganar comisiones. 🏪✨",
+        url: referralLink,
+      })
+    } else {
+      navigator.clipboard.writeText(referralLink)
+      alert("¡Link de referido copiado!")
     }
   }
 
@@ -147,7 +176,12 @@ export default function CustomerDashboard() {
           </div>
 
           <div className="flex items-center space-x-2">
-            <Button variant="ghost" size="icon" className="text-white relative">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-white relative"
+              onClick={() => alert("Gestionando notificaciones...")}
+            >
               <Bell className="h-5 w-5" />
               <div className="absolute -top-1 -right-1 bg-red-500 rounded-full w-3 h-3" />
             </Button>
@@ -319,19 +353,31 @@ export default function CustomerDashboard() {
               </div>
 
               <div className="grid grid-cols-4 gap-2">
-                <Button size="sm" className="bg-green-600 hover:bg-green-700 text-xs">
+                <Button
+                  size="sm"
+                  className="bg-green-600 hover:bg-green-700 text-xs"
+                  onClick={() => alert(`Llamando a ${business.phone}`)}
+                >
                   <Phone className="h-3 w-3 mr-1" />
                   Llamar
                 </Button>
-                <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-xs">
+                <Button
+                  size="sm"
+                  className="bg-blue-600 hover:bg-blue-700 text-xs"
+                  onClick={() => alert(`Navegando a ${business.address}`)}
+                >
                   <Navigation className="h-3 w-3 mr-1" />
                   Ir
                 </Button>
-                <Button size="sm" className="bg-purple-600 hover:bg-purple-700 text-xs">
+                <Button
+                  size="sm"
+                  className="bg-purple-600 hover:bg-purple-700 text-xs"
+                  onClick={() => alert(`Iniciando pedido para ${business.name}`)}
+                >
                   <ShoppingCart className="h-3 w-3 mr-1" />
                   Pedir
                 </Button>
-                <Button variant="outline" size="sm" className="text-xs">
+                <Button variant="outline" size="sm" className="text-xs" onClick={() => shareBusiness(business)}>
                   <Share2 className="h-3 w-3 mr-1" />
                   Compartir
                 </Button>
@@ -377,7 +423,7 @@ export default function CustomerDashboard() {
                 {copiedCode ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
               </Button>
             </div>
-            <Button className="w-full mt-3 bg-blue-600 hover:bg-blue-700">
+            <Button className="w-full mt-3 bg-blue-600 hover:bg-blue-700" onClick={shareReferralLink}>
               <Share2 className="h-4 w-4 mr-2" />
               Compartir Código
             </Button>
@@ -448,15 +494,27 @@ export default function CustomerDashboard() {
           </div>
 
           <div className="space-y-3">
-            <Button variant="outline" className="w-full justify-start">
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              onClick={() => alert("Funcionalidad de Configuración de Cuenta en desarrollo.")}
+            >
               <Settings className="h-4 w-4 mr-2" />
               Configuración de Cuenta
             </Button>
-            <Button variant="outline" className="w-full justify-start">
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              onClick={() => alert("Funcionalidad de Notificaciones en desarrollo.")}
+            >
               <Bell className="h-4 w-4 mr-2" />
               Notificaciones
             </Button>
-            <Button variant="outline" className="w-full justify-start">
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              onClick={() => alert("Funcionalidad de Métodos de Pago en desarrollo.")}
+            >
               <CreditCard className="h-4 w-4 mr-2" />
               Métodos de Pago
             </Button>
