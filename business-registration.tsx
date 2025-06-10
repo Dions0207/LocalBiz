@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState } from "react" // Keep these imports for useAuth context
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -58,14 +58,20 @@ export default function BusinessRegistration({ onBusinessRegistered, onCancel }:
   const [errors, setErrors] = useState<any>({})
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [generalError, setGeneralError] = useState<string | null>(null) // New state for general error
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target
-    if (type === "checkbox") {
-      setFormData({ ...formData, [name]: (e.target as HTMLInputElement).checked })
-    } else {
-      setFormData({ ...formData, [name]: value })
+    setFormData({ ...formData, [name]: type === "checkbox" ? (e.target as HTMLInputElement).checked : value })
+    // Clear specific error when user starts typing
+    if (errors[name]) {
+      setErrors((prevErrors: any) => {
+        const newErrors = { ...prevErrors }
+        delete newErrors[name]
+        return newErrors
+      })
     }
+    setGeneralError(null) // Clear general error on any input change
   }
 
   const handleHoursChange = (day: string, field: "open" | "close" | "active", value: string | boolean) => {
@@ -84,45 +90,58 @@ export default function BusinessRegistration({ onBusinessRegistered, onCancel }:
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setErrors({})
+    setGeneralError(null)
     setSuccess(false)
     setLoading(true)
 
+    console.log("Attempting to submit business registration form...")
+
     // Basic validation
     const newErrors: any = {}
-    if (!formData.name) newErrors.name = "El nombre del negocio es obligatorio."
-    if (!formData.category) newErrors.category = "La categoría es obligatoria."
-    if (!formData.address) newErrors.address = "La dirección es obligatoria."
-    if (!formData.phone) newErrors.phone = "El teléfono es obligatorio."
-    if (!formData.email) newErrors.email = "El email es obligatorio."
+    if (!formData.name.trim()) newErrors.name = "El nombre del negocio es obligatorio."
+    if (!formData.category.trim()) newErrors.category = "La categoría es obligatoria."
+    if (!formData.address.trim()) newErrors.address = "La dirección es obligatoria."
+    if (!formData.phone.trim()) newErrors.phone = "El teléfono es obligatorio."
+    if (!formData.email.trim()) newErrors.email = "El email es obligatorio."
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
+      setGeneralError("Por favor, completa todos los campos obligatorios.")
       setLoading(false)
+      console.log("Validation failed:", newErrors)
       return
     }
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500))
+    try {
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 1500))
 
-    const newBusinessData = {
-      id: `biz_${Date.now()}`,
-      owner_id: user?.id || "mock_user_id", // Link to current user
-      status: "pending", // Or 'active' based on your logic
-      verified: false,
-      featured: false,
-      rating: 0,
-      review_count: 0,
-      subscription_plan: "free",
-      monthlyRevenue: 0,
-      totalOrders: 0,
-      activePromotions: 0,
-      subscriptionExpiry: new Date(new Date().setFullYear(new Date().getFullYear() + 1)),
-      ...formData,
+      const newBusinessData = {
+        id: `biz_${Date.now()}`,
+        owner_id: user?.id || "mock_user_id", // Link to current user
+        status: "pending", // Or 'active' based on your logic
+        verified: false,
+        featured: false,
+        rating: 0,
+        review_count: 0,
+        subscription_plan: "free",
+        monthlyRevenue: 0,
+        totalOrders: 0,
+        activePromotions: 0,
+        subscriptionExpiry: new Date(new Date().setFullYear(new Date().getFullYear() + 1)),
+        ...formData,
+      }
+
+      console.log("Business data to be registered:", newBusinessData)
+      setSuccess(true)
+      onBusinessRegistered(newBusinessData)
+      console.log("Business registered successfully (simulated)!")
+    } catch (error) {
+      console.error("Error during business registration (simulated):", error)
+      setGeneralError("Ocurrió un error al registrar el negocio. Intenta de nuevo.")
+    } finally {
+      setLoading(false)
     }
-
-    setLoading(false)
-    setSuccess(true)
-    onBusinessRegistered(newBusinessData)
   }
 
   const daysOfWeek = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
@@ -144,10 +163,10 @@ export default function BusinessRegistration({ onBusinessRegistered, onCancel }:
               <span className="text-green-700 text-sm">¡Negocio registrado con éxito! Redirigiendo...</span>
             </div>
           )}
-          {errors.general && (
+          {generalError && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-center">
               <AlertCircle className="h-4 w-4 text-red-600 mr-2" />
-              <span className="text-red-700 text-sm">{errors.general}</span>
+              <span className="text-red-700 text-sm">{generalError}</span>
             </div>
           )}
 
