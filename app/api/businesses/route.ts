@@ -6,15 +6,15 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const category = searchParams.get("category")
     const search = searchParams.get("search")
-    const userId = searchParams.get("userId")
+    const userId = searchParams.get("userId") // Get userId for specific business lookup
 
     let query = supabase.from("businesses").select("*")
 
-    // Filter by user if provided
+    // Filter by user if provided (for business dashboard)
     if (userId) {
       query = query.eq("owner_id", userId)
     } else {
-      // Only show active businesses for public view
+      // Only show active businesses for public view (customer dashboard)
       query = query.eq("status", "active")
     }
 
@@ -48,17 +48,33 @@ export async function POST(request: NextRequest) {
   try {
     const businessData = await request.json()
 
+    // IMPORTANT: You need to get the actual user ID from the session/auth context here.
+    // For now, I'm using a placeholder. In a real app, you'd get it from a JWT or session.
+    // Example (if using a session management library or Next.js auth):
+    // const { user } = await getSession(); // Or similar
+    // if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    // const owner_id = user.id;
+
+    // For demonstration, let's assume owner_id is passed or derived from a simple auth context
+    // For now, we'll use a dummy ID or expect it from the frontend (which is not ideal for security)
+    // A better approach would be to get it from the server-side session.
+    const owner_id = businessData.owner_id || "dummy_owner_id_123" // Replace with actual user ID logic
+
     const { data: business, error } = await supabase
       .from("businesses")
       .insert([
         {
           ...businessData,
-          status: "pending",
+          owner_id: owner_id, // Ensure owner_id is set
+          status: "pending", // Businesses start as pending
           verified: false,
           featured: false,
           rating: 0,
           review_count: 0,
           subscription_plan: "free",
+          // Ensure logo_url and cover_image_url are passed from businessData
+          logo_url: businessData.logoUrl,
+          cover_image_url: businessData.coverImageUrl,
         },
       ])
       .select()

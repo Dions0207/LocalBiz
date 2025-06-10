@@ -21,8 +21,8 @@ export default function BusinessRegistration({ onRegisterSuccess, onCancel }: Bu
     email: "",
     website: "",
     description: "",
-    logoUrl: "", // New field for logo URL
-    coverImageUrl: "", // New field for cover image URL
+    logoUrl: "",
+    coverImageUrl: "",
   })
   const [errors, setErrors] = useState<any>({})
   const [generalError, setGeneralError] = useState<string | null>(null)
@@ -53,8 +53,9 @@ export default function BusinessRegistration({ onRegisterSuccess, onCancel }: Bu
         break
       case "logoUrl":
       case "coverImageUrl":
-        if (value.trim() && !/^https?:\/\/\S+\.(png|jpg|jpeg|gif|svg)$/i.test(value)) {
-          fieldError = "URL de imagen inválida (solo .png, .jpg, .jpeg, .gif, .svg)."
+        if (value.trim() && !/^https?:\/\/\S+\.(png|jpg|jpeg|gif|svg|webp)$/i.test(value)) {
+          // Added webp
+          fieldError = "URL de imagen inválida (solo .png, .jpg, .jpeg, .gif, .svg, .webp)."
         }
         break
       default:
@@ -67,8 +68,8 @@ export default function BusinessRegistration({ onRegisterSuccess, onCancel }: Bu
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     setFormData({ ...formData, [name]: value })
-    validateField(name, value) // Validar al cambiar
-    setGeneralError(null) // Limpiar error general al interactuar
+    validateField(name, value)
+    setGeneralError(null)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -76,9 +77,8 @@ export default function BusinessRegistration({ onRegisterSuccess, onCancel }: Bu
     console.log("Attempting to submit business registration form.")
     setGeneralError(null)
     let formIsValid = true
-    const currentErrors: any = {} // Usar un objeto temporal para acumular errores
+    const currentErrors: any = {}
 
-    // Validar todos los campos obligatorios y los de imagen
     const fieldsToValidate = [
       "name",
       "category",
@@ -96,7 +96,7 @@ export default function BusinessRegistration({ onRegisterSuccess, onCancel }: Bu
       }
     })
 
-    setErrors(currentErrors) // Actualizar el estado de errores con todos los errores acumulados
+    setErrors(currentErrors)
 
     if (!formIsValid) {
       setGeneralError("Por favor, corrige los errores en el formulario.")
@@ -105,16 +105,32 @@ export default function BusinessRegistration({ onRegisterSuccess, onCancel }: Bu
     }
 
     setIsLoading(true)
-    console.log("Form is valid. Submitting data:", formData)
+    console.log("Form is valid. Submitting data to API:", formData)
 
-    // Simular API call para registrar el negocio
     try {
-      await new Promise((resolve) => setTimeout(resolve, 2000)) // Simular carga
-      console.log("Business registration simulated successfully.")
-      onRegisterSuccess(formData) // Llamar al callback de éxito
-    } catch (error) {
+      const response = await fetch("/api/businesses", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...formData,
+          owner_id: "current_user_id_placeholder", // TODO: Replace with actual user ID from auth context
+          // Add other default fields as per your Supabase schema if not handled by API route
+        }),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || "Error al registrar el negocio.")
+      }
+
+      console.log("Business registered successfully:", result.business)
+      onRegisterSuccess(result.business) // Pass the actual registered business data
+    } catch (error: any) {
       console.error("Error during business registration:", error)
-      setGeneralError("Error al registrar el negocio. Intenta de nuevo.")
+      setGeneralError(error.message || "Error al registrar el negocio. Intenta de nuevo.")
     } finally {
       setIsLoading(false)
     }
@@ -168,7 +184,7 @@ export default function BusinessRegistration({ onRegisterSuccess, onCancel }: Bu
                   name="category"
                   value={formData.category}
                   onChange={handleChange}
-                  className="w-full p-2 border rounded-md pl-10 h-10" // Ajustar altura para que coincida con Input
+                  className="w-full p-2 border rounded-md pl-10 h-10"
                 >
                   <option value="">Selecciona una categoría</option>
                   <option value="food">🍕 Comida y Restaurantes</option>

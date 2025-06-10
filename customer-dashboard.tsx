@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react" // Added useCallback
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -32,6 +32,9 @@ import {
 } from "lucide-react"
 import { BackButton } from "@/components/back-button"
 
+// Re-using Business interface from lib/supabase.ts for consistency
+import type { Business } from "@/lib/supabase"
+
 export default function CustomerDashboard() {
   const { user, switchToBusinessMode, logout } = useAuth()
   const [currentView, setCurrentView] = useState("home")
@@ -43,89 +46,48 @@ export default function CustomerDashboard() {
   const [affiliateEarnings, setAffiliateEarnings] = useState(247.85)
   const [referralCount, setReferralCount] = useState(8)
   const [copiedCode, setCopiedCode] = useState(false)
+  const [businesses, setBusinesses] = useState<Business[]>([]) // State to hold fetched businesses
+  const [loadingBusinesses, setLoadingBusinesses] = useState(true)
+  const [businessError, setBusinessError] = useState<string | null>(null)
 
-  const businesses = [
-    {
-      id: "biz_001",
-      name: "Tacos El Güero",
-      category: "food",
-      image: "/placeholder.svg?height=200&width=300",
-      rating: 4.8,
-      reviews: 234,
-      address: "Av. Insurgentes Sur 1234, Roma Norte",
-      phone: "+52 55 1234-5678",
-      distance: 0.3,
-      description: "Los mejores tacos al pastor de la zona. Más de 20 años sirviendo sabor auténtico.",
-      verified: true,
-      featured: true,
-      acceptsCrypto: true,
-      promotion: "🔥 20% OFF pagando con USDT",
-      avgPrice: "$150 MXN / $8 USDT",
-      hours: "Lun-Dom 8:00-22:00",
-      specialties: ["Tacos al Pastor", "Quesadillas", "Salsas Caseras"],
-    },
-    {
-      id: "biz_002",
-      name: "Boutique Luna",
-      category: "retail",
-      image: "/placeholder.svg?height=200&width=300",
-      rating: 4.6,
-      reviews: 89,
-      address: "Calle Álvaro Obregón 567, Condesa",
-      phone: "+52 55 2345-6789",
-      distance: 0.7,
-      description: "Ropa femenina única y accesorios exclusivos.",
-      verified: false,
-      featured: false,
-      acceptsCrypto: true,
-      promotion: "💎 Envío gratis con compras >$50 USDT",
-      avgPrice: "$500-2000 MXN / $25-100 USDT",
-      hours: "Lun-Sáb 10:00-20:00",
-      specialties: ["Vestidos", "Accesorios", "Ropa Casual"],
-    },
-    {
-      id: "biz_003",
-      name: "Café Literario",
-      category: "food",
-      image: "/placeholder.svg?height=200&width=300",
-      rating: 4.9,
-      reviews: 156,
-      address: "Calle Roma Norte 123, Roma Norte",
-      phone: "+52 55 3456-7890",
-      distance: 0.5,
-      description: "Café de especialidad con ambiente literario. WiFi gratis y eventos culturales.",
-      verified: true,
-      featured: true,
-      acceptsCrypto: true,
-      promotion: "☕ 2x1 en cafés de 3-5 PM",
-      avgPrice: "$80-200 MXN / $4-10 USDT",
-      hours: "Lun-Dom 7:00-23:00",
-      specialties: ["Café de Especialidad", "Postres", "Libros"],
-    },
-  ]
+  const fetchBusinesses = useCallback(async () => {
+    setLoadingBusinesses(true)
+    setBusinessError(null)
+    try {
+      const response = await fetch(`/api/businesses?category=${selectedCategory}&search=${searchTerm}`)
+      const result = await response.json()
+
+      if (response.ok && result.businesses) {
+        setBusinesses(result.businesses)
+      } else {
+        throw new Error(result.error || "Failed to fetch businesses.")
+      }
+    } catch (error: any) {
+      console.error("Error fetching businesses:", error)
+      setBusinessError(error.message || "Error al cargar negocios.")
+    } finally {
+      setLoadingBusinesses(false)
+    }
+  }, [selectedCategory, searchTerm])
+
+  useEffect(() => {
+    fetchBusinesses()
+  }, [fetchBusinesses])
 
   const categories = [
-    { id: "all", name: "Todos", icon: "🏪", count: 1247 },
-    { id: "food", name: "Comida", icon: "🍕", count: 324 },
-    { id: "retail", name: "Retail", icon: "👕", count: 189 },
-    { id: "services", name: "Servicios", icon: "🔧", count: 156 },
-    { id: "beauty", name: "Belleza", icon: "💄", count: 87 },
-    { id: "automotive", name: "Auto", icon: "🚗", count: 76 },
+    { id: "all", name: "Todos", icon: "🏪", count: 0 }, // Count will be dynamic
+    { id: "food", name: "Comida", icon: "🍕", count: 0 },
+    { id: "retail", name: "Retail", icon: "👕", count: 0 },
+    { id: "services", name: "Servicios", icon: "🔧", count: 0 },
+    { id: "beauty", name: "Belleza", icon: "💄", count: 0 },
+    { id: "automotive", name: "Auto", icon: "🚗", count: 0 },
   ]
-
-  const filteredBusinesses = businesses.filter((business) => {
-    const matchesSearch =
-      business.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      business.description.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesCategory = selectedCategory === "all" || business.category === selectedCategory
-    return matchesSearch && matchesCategory
-  })
 
   const toggleFavorite = (businessId: string) => {
     setFavorites((prev) => (prev.includes(businessId) ? prev.filter((id) => id !== businessId) : [...prev, businessId]))
   }
 
-  const shareBusiness = (business: any) => {
+  const shareBusiness = (business: Business) => {
     const businessLink = `https://localbiz.app/business/${business.id}`
     if (navigator.share) {
       navigator.share({
@@ -140,15 +102,16 @@ export default function CustomerDashboard() {
   }
 
   const copyReferralCode = () => {
-    if (user?.referralCode) {
-      navigator.clipboard.writeText(user.referralCode)
+    if (user?.referral_code) {
+      // Changed to referral_code
+      navigator.clipboard.writeText(user.referral_code)
       setCopiedCode(true)
       setTimeout(() => setCopiedCode(false), 2000)
     }
   }
 
   const shareReferralLink = () => {
-    const referralLink = `https://localbiz.app/ref/${user?.referralCode}`
+    const referralLink = `https://localbiz.app/ref/${user?.referral_code}` // Changed to referral_code
 
     if (navigator.share) {
       navigator.share({
@@ -287,109 +250,120 @@ export default function CustomerDashboard() {
       </div>
 
       {/* Business List */}
-      <div className="space-y-4">
-        {filteredBusinesses.map((business) => (
-          <Card
-            key={business.id}
-            className="hover:shadow-lg transition-all duration-300 bg-white border-2 border-transparent hover:border-purple-200"
-          >
-            <div className="relative">
-              <img
-                src={business.image || "/placeholder.svg"}
-                alt={business.name}
-                className="w-full h-32 object-cover rounded-t-lg"
-              />
-              {business.featured && (
-                <Badge className="absolute top-2 left-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-black">
-                  ⭐ Destacado
-                </Badge>
-              )}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute top-2 right-2 bg-white/80 hover:bg-white"
-                onClick={() => toggleFavorite(business.id)}
-              >
-                <Heart
-                  className={`h-4 w-4 ${favorites.includes(business.id) ? "text-red-500 fill-current" : "text-gray-600"}`}
+      {loadingBusinesses ? (
+        <div className="text-center text-gray-500">Cargando negocios...</div>
+      ) : businessError ? (
+        <div className="text-center text-red-600">Error: {businessError}</div>
+      ) : businesses.length === 0 ? (
+        <div className="text-center text-gray-500">No se encontraron negocios.</div>
+      ) : (
+        <div className="space-y-4">
+          {businesses.map((business) => (
+            <Card
+              key={business.id}
+              className="hover:shadow-lg transition-all duration-300 bg-white border-2 border-transparent hover:border-purple-200"
+            >
+              <div className="relative">
+                <img
+                  src={business.cover_image_url || "/placeholder.svg?height=200&width=300"} // Use cover_image_url
+                  alt={business.name}
+                  className="w-full h-32 object-cover rounded-t-lg"
                 />
-              </Button>
-              <div className="absolute bottom-2 right-2 bg-black/70 text-white px-2 py-1 rounded text-xs">
-                📍 {business.distance} km
-              </div>
-            </div>
-
-            <CardContent className="p-3">
-              <div className="flex justify-between items-start mb-2">
-                <h3 className="font-bold text-lg">{business.name}</h3>
-                <div className="flex items-center">
-                  <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                  <span className="text-sm font-medium ml-1">{business.rating}</span>
-                  <span className="text-xs text-gray-500 ml-1">({business.reviews})</span>
-                </div>
-              </div>
-
-              <p className="text-sm text-gray-600 mb-3 line-clamp-2">{business.description}</p>
-
-              {business.promotion && (
-                <div className="bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-lg p-2 mb-3">
-                  <p className="text-sm font-bold text-red-700">{business.promotion}</p>
-                </div>
-              )}
-
-              <div className="flex items-center justify-between text-sm text-gray-600 mb-3">
-                <div className="flex items-center">
-                  <Clock className="h-4 w-4 mr-1" />
-                  <span>{business.hours}</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  {business.acceptsCrypto && (
-                    <Badge variant="outline" className="text-xs bg-yellow-50">
-                      <Bitcoin className="h-3 w-3 mr-1" />
-                      USDT
-                    </Badge>
-                  )}
-                  <Badge variant="outline" className="text-xs bg-blue-50">
-                    <CreditCard className="h-3 w-3 mr-1" />
-                    USD
+                {business.featured && (
+                  <Badge className="absolute top-2 left-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-black">
+                    ⭐ Destacado
                   </Badge>
+                )}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute top-2 right-2 bg-white/80 hover:bg-white"
+                  onClick={() => toggleFavorite(business.id)}
+                >
+                  <Heart
+                    className={`h-4 w-4 ${favorites.includes(business.id) ? "text-red-500 fill-current" : "text-gray-600"}`}
+                  />
+                </Button>
+                <div className="absolute bottom-2 right-2 bg-black/70 text-white px-2 py-1 rounded text-xs">
+                  📍 {business.address ? "Cerca" : "Ubicación no disponible"} {/* Simplified distance */}
                 </div>
               </div>
 
-              <div className="grid grid-cols-4 gap-2">
-                <Button
-                  size="sm"
-                  className="bg-green-600 hover:bg-green-700 text-xs"
-                  onClick={() => alert(`Llamando a ${business.phone}`)}
-                >
-                  <Phone className="h-3 w-3 mr-1" />
-                  Llamar
-                </Button>
-                <Button
-                  size="sm"
-                  className="bg-blue-600 hover:bg-blue-700 text-xs"
-                  onClick={() => alert(`Navegando a ${business.address}`)}
-                >
-                  <Navigation className="h-3 w-3 mr-1" />
-                  Ir
-                </Button>
-                <Button
-                  size="sm"
-                  className="bg-purple-600 hover:bg-purple-700 text-xs"
-                  onClick={() => alert(`Iniciando pedido para ${business.name}`)}
-                >
-                  <ShoppingCart className="h-3 w-3 mr-1" />
-                  Pedir
-                </Button>
-                <Button variant="outline" size="sm" className="text-xs" onClick={() => shareBusiness(business)}>
-                  <Share2 className="h-3 w-3 mr-1" />
-                  Compartir
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+              <CardContent className="p-3">
+                <div className="flex justify-between items-start mb-2">
+                  <h3 className="font-bold text-lg">{business.name}</h3>
+                  <div className="flex items-center">
+                    <Star className="h-4 w-4 text-yellow-400 fill-current" />
+                    <span className="text-sm font-medium ml-1">{business.rating || 0}</span>
+                    <span className="text-xs text-gray-500 ml-1">({business.review_count || 0})</span>
+                  </div>
+                </div>
+
+                <p className="text-sm text-gray-600 mb-3 line-clamp-2">{business.description}</p>
+
+                {/* No direct promotion field in DB, can be added later */}
+                {/* {business.promotion && (
+                  <div className="bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-lg p-2 mb-3">
+                    <p className="text-sm font-bold text-red-700">{business.promotion}</p>
+                  </div>
+                )} */}
+
+                <div className="flex items-center justify-between text-sm text-gray-600 mb-3">
+                  <div className="flex items-center">
+                    <Clock className="h-4 w-4 mr-1" />
+                    <span>Horario no disponible</span> {/* Placeholder for hours */}
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    {business.accepts_crypto && ( // Changed to accepts_crypto
+                      <Badge variant="outline" className="text-xs bg-yellow-50">
+                        <Bitcoin className="h-3 w-3 mr-1" />
+                        USDT
+                      </Badge>
+                    )}
+                    {business.accepts_cards && ( // Changed to accepts_cards
+                      <Badge variant="outline" className="text-xs bg-blue-50">
+                        <CreditCard className="h-3 w-3 mr-1" />
+                        USD
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-4 gap-2">
+                  <Button
+                    size="sm"
+                    className="bg-green-600 hover:bg-green-700 text-xs"
+                    onClick={() => alert(`Llamando a ${business.phone}`)}
+                  >
+                    <Phone className="h-3 w-3 mr-1" />
+                    Llamar
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="bg-blue-600 hover:bg-blue-700 text-xs"
+                    onClick={() => alert(`Navegando a ${business.address}`)}
+                  >
+                    <Navigation className="h-3 w-3 mr-1" />
+                    Ir
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="bg-purple-600 hover:bg-purple-700 text-xs"
+                    onClick={() => alert(`Iniciando pedido para ${business.name}`)}
+                  >
+                    <ShoppingCart className="h-3 w-3 mr-1" />
+                    Pedir
+                  </Button>
+                  <Button variant="outline" size="sm" className="text-xs" onClick={() => shareBusiness(business)}>
+                    <Share2 className="h-3 w-3 mr-1" />
+                    Compartir
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   )
 
@@ -422,7 +396,7 @@ export default function CustomerDashboard() {
           <div className="bg-white rounded-lg p-4 border mb-4">
             <h3 className="font-bold mb-3">Tu Código de Referido</h3>
             <div className="bg-gray-50 p-3 rounded border-2 border-dashed flex items-center justify-between">
-              <p className="font-mono text-lg font-bold">{user?.referralCode}</p>
+              <p className="font-mono text-lg font-bold">{user?.referral_code}</p>
               <Button size="sm" variant="outline" onClick={copyReferralCode}>
                 {copiedCode ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
               </Button>
@@ -489,11 +463,14 @@ export default function CustomerDashboard() {
             </div>
             <div>
               <label className="text-sm font-medium text-gray-600">Código de Referido</label>
-              <p className="font-semibold">{user?.referralCode}</p>
+              <p className="font-semibold">{user?.referral_code}</p> {/* Changed to referral_code */}
             </div>
             <div>
               <label className="text-sm font-medium text-gray-600">Miembro desde</label>
-              <p className="font-semibold">{user?.createdAt.toLocaleDateString()}</p>
+              <p className="font-semibold">
+                {user?.created_at ? new Date(user.created_at).toLocaleDateString() : "N/A"}
+              </p>{" "}
+              {/* Changed to created_at */}
             </div>
           </div>
 

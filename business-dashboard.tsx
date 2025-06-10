@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input"
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react" // Added useCallback
 import { useAuth } from "./auth-system"
 import BusinessRegistration from "./business-registration"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -51,13 +51,13 @@ interface BusinessData {
   email: string
   website?: string
   description: string
-  ownerId: string
+  owner_id: string // Changed to owner_id to match Supabase schema
   status: "active" | "pending" | "suspended"
-  createdAt: Date
-  logoUrl?: string // Updated to logoUrl
-  coverImageUrl?: string // Updated to coverImageUrl
+  created_at: string // Changed to created_at to match Supabase schema
+  logo_url?: string // Changed to logo_url
+  cover_image_url?: string // Changed to cover_image_url
   rating?: number
-  reviewsCount?: number
+  review_count?: number // Changed to review_count
 }
 
 interface AdCampaign {
@@ -95,7 +95,7 @@ export default function BusinessDashboard() {
   const [activeTab, setActiveTab] = useState("overview")
   const [showRegistrationForm, setShowRegistrationForm] = useState(false)
   const [showCreateAdForm, setShowCreateAdForm] = useState(false)
-  const [businesses, setBusinesses] = useState<BusinessData[]>([]) // Simular negocios del usuario
+  const [currentBusiness, setCurrentBusiness] = useState<BusinessData | null>(null) // Now holds the single business
   const [adCampaigns, setAdCampaigns] = useState<AdCampaign[]>([]) // Simular campañas de anuncios
 
   // New state for AI banner generation
@@ -104,67 +104,63 @@ export default function BusinessDashboard() {
   const [isGeneratingBanner, setIsGeneratingBanner] = useState(false)
   const [bannerGenerationError, setBannerGenerationError] = useState<string | null>(null)
 
-  useEffect(() => {
-    // Simular carga de negocios y campañas al iniciar
-    if (user && user.userType === "business") {
-      // Si el usuario de prueba no tiene businessId, simular que no tiene negocio registrado
-      if (!user.businessId && businesses.length === 0) {
-        setShowRegistrationForm(true)
-      } else if (user.businessId && businesses.length === 0) {
-        // Simular que ya tiene un negocio registrado
-        setBusinesses([
-          {
-            id: user.businessId,
-            name: "Mi Negocio de Prueba",
-            category: "Servicios",
-            address: "Calle Falsa 123, Ciudad de México",
-            phone: "+52 55 9876-5432",
-            email: user.email,
-            website: "https://www.minegocio.com",
-            description: "Un negocio de prueba para demostración.",
-            ownerId: user.id,
-            status: "active",
-            createdAt: new Date("2024-01-10"),
-            logoUrl: "/placeholder.svg?height=60&width=60", // Use placeholder
-            coverImageUrl: "/placeholder.svg?height=200&width=400", // Use placeholder
-            rating: 4.5,
-            reviewsCount: 120,
-          },
-        ])
-        setAdCampaigns([
-          {
-            id: "ad_001",
-            businessId: user.businessId,
-            name: "Campaña de Lanzamiento",
-            status: "active",
-            budget: 500,
-            spent: 350,
-            impressions: 15000,
-            clicks: 500,
-            startDate: new Date("2024-05-01"),
-            endDate: new Date("2024-05-31"),
-            targetAudience: "Clientes en CDMX",
-            adContent: "Gran oferta en todos nuestros productos!",
-            adBannerUrl: "/placeholder.svg?height=150&width=600", // Placeholder for ad banner
-            createdAt: new Date("2024-04-25"),
-          },
-        ])
-      }
-    }
-  }, [user]) // Dependencia en user para recargar si cambia
+  // Function to fetch business data
+  const fetchBusiness = useCallback(async () => {
+    if (!user?.id) return // Ensure user ID is available
 
-  const handleBusinessRegistered = (newBusinessData: any) => {
-    const newBusiness: BusinessData = {
-      id: `biz_${Date.now()}`,
-      ownerId: user?.id || "unknown",
-      status: "active",
-      createdAt: new Date(),
-      ...newBusinessData,
+    try {
+      console.log(`Fetching business for user ID: ${user.id}`)
+      const response = await fetch(`/api/businesses?userId=${user.id}`)
+      const result = await response.json()
+
+      if (response.ok && result.businesses && result.businesses.length > 0) {
+        setCurrentBusiness(result.businesses[0])
+        console.log("Business loaded:", result.businesses[0])
+        // If business is loaded, hide registration form
+        setShowRegistrationForm(false)
+      } else {
+        console.log("No business found for this user or error fetching:", result.error || "No businesses array")
+        setCurrentBusiness(null)
+        // If no business, show registration form
+        setShowRegistrationForm(true)
+      }
+    } catch (error) {
+      console.error("Failed to fetch business:", error)
+      setCurrentBusiness(null)
+      setShowRegistrationForm(true) // Show form on error too
     }
-    setBusinesses([...businesses, newBusiness])
+  }, [user])
+
+  useEffect(() => {
+    if (user && user.userType === "business") {
+      fetchBusiness()
+      // Simulate ad campaigns for now, will fetch from API later
+      setAdCampaigns([
+        {
+          id: "ad_001",
+          businessId: "biz_001", // Placeholder
+          name: "Campaña de Lanzamiento",
+          status: "active",
+          budget: 500,
+          spent: 350,
+          impressions: 15000,
+          clicks: 500,
+          startDate: new Date("2024-05-01"),
+          endDate: new Date("2024-05-31"),
+          targetAudience: "Clientes en CDMX",
+          adContent: "Gran oferta en todos nuestros productos!",
+          adBannerUrl: "/placeholder.svg?height=150&width=600",
+          createdAt: new Date("2024-04-25"),
+        },
+      ])
+    }
+  }, [user, fetchBusiness]) // Add fetchBusiness to dependencies
+
+  const handleBusinessRegistered = (newBusinessData: BusinessData) => {
+    setCurrentBusiness(newBusinessData)
     setShowRegistrationForm(false)
-    setActiveTab("overview") // Go to overview after registration
-    console.log("New business registered:", newBusiness)
+    setActiveTab("overview")
+    console.log("New business registered and set as current:", newBusinessData)
   }
 
   const handleCreateAd = (e: React.FormEvent) => {
@@ -172,9 +168,9 @@ export default function BusinessDashboard() {
     const form = e.target as HTMLFormElement
     const newAd: AdCampaign = {
       id: `ad_${Date.now()}`,
-      businessId: businesses[0]?.id || "unknown",
+      businessId: currentBusiness?.id || "unknown", // Use actual business ID
       name: (form.elements.namedItem("adName") as HTMLInputElement).value,
-      status: "active", // Default to active
+      status: "active",
       budget: Number.parseFloat((form.elements.namedItem("adBudget") as HTMLInputElement).value),
       spent: 0,
       impressions: 0,
@@ -185,15 +181,15 @@ export default function BusinessDashboard() {
           new Date().getDate() + Number.parseInt((form.elements.namedItem("adDuration") as HTMLInputElement).value),
         ),
       ),
-      targetAudience: "General", // Simplified
+      targetAudience: "General",
       adContent: (form.elements.namedItem("adContent") as HTMLTextAreaElement).value,
       adBannerUrl:
-        (form.elements.namedItem("adBannerUrl") as HTMLInputElement)?.value || "/placeholder.svg?height=150&width=600", // Get banner URL
+        (form.elements.namedItem("adBannerUrl") as HTMLInputElement)?.value || "/placeholder.svg?height=150&width=600",
       createdAt: new Date(),
     }
     setAdCampaigns([...adCampaigns, newAd])
     setShowCreateAdForm(false)
-    setActiveTab("ads") // Go to ads view after creation
+    setActiveTab("ads")
     console.log("New ad campaign created:", newAd)
     alert("Campaña de anuncio creada (simulado)!")
   }
@@ -205,7 +201,7 @@ export default function BusinessDashboard() {
     }
     setIsGeneratingBanner(true)
     setBannerGenerationError(null)
-    setGeneratedBannerUrl("") // Clear previous generated URL
+    setGeneratedBannerUrl("")
 
     try {
       const response = await fetch("/api/generate-banner", {
@@ -223,7 +219,6 @@ export default function BusinessDashboard() {
 
       const data = await response.json()
       setGeneratedBannerUrl(data.imageUrl)
-      // Automatically populate the adBannerUrl input field
       const adBannerUrlInput = document.getElementById("adBannerUrl") as HTMLInputElement
       if (adBannerUrlInput) {
         adBannerUrlInput.value = data.imageUrl
@@ -236,8 +231,6 @@ export default function BusinessDashboard() {
     }
   }
 
-  const currentBusiness = businesses.length > 0 ? businesses[0] : null
-
   if (!user || user.userType !== "business") {
     return (
       <div className="flex items-center justify-center min-h-screen bg-red-100 text-red-800">
@@ -246,7 +239,7 @@ export default function BusinessDashboard() {
     )
   }
 
-  // Si no hay negocios registrados y no estamos en el formulario de registro
+  // If no business registered and not currently showing the registration form
   if (!currentBusiness && !showRegistrationForm) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-4">
@@ -277,7 +270,7 @@ export default function BusinessDashboard() {
     )
   }
 
-  // Si estamos en el formulario de registro
+  // If showing the registration form
   if (showRegistrationForm) {
     console.log("BusinessDashboard: showRegistrationForm is now true. Rendering BusinessRegistration.")
     return (
@@ -293,7 +286,7 @@ export default function BusinessDashboard() {
     )
   }
 
-  // Si estamos en el formulario de creación de anuncio
+  // If showing the create ad form
   if (showCreateAdForm) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex items-center justify-center p-4">
@@ -320,7 +313,7 @@ export default function BusinessDashboard() {
               <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-full w-16 h-16 flex items-center justify-center mx-auto">
                 <Megaphone className="h-8 w-8 text-white" />
               </div>
-              <div className="w-10"></div> {/* Spacer */}
+              <div className="w-10"></div>
             </div>
             <CardTitle className="text-2xl">Crear Nueva Campaña de Anuncio</CardTitle>
             <p className="text-gray-600">Llega a más clientes con promociones destacadas.</p>
@@ -361,7 +354,6 @@ export default function BusinessDashboard() {
                 </div>
               </div>
 
-              {/* AI Banner Generation Section */}
               <div className="space-y-2 p-4 border rounded-lg bg-purple-50/20">
                 <h3 className="font-semibold text-purple-800 flex items-center">
                   <Sparkles className="h-4 w-4 mr-2" />
@@ -405,7 +397,6 @@ export default function BusinessDashboard() {
                   </div>
                 )}
               </div>
-              {/* End AI Banner Generation Section */}
 
               <div className="space-y-2">
                 <label htmlFor="adBannerUrl" className="text-sm font-medium">
@@ -419,10 +410,9 @@ export default function BusinessDashboard() {
                     placeholder="https://ejemplo.com/banner.jpg"
                     type="url"
                     className="pl-10"
-                    defaultValue={generatedBannerUrl} // Set default value from AI generated URL
+                    defaultValue={generatedBannerUrl}
                   />
                 </div>
-                {/* Preview for ad banner */}
                 {(document.getElementById("adBannerUrl") as HTMLInputElement)?.value && (
                   <div className="mt-2 flex justify-center">
                     <img
@@ -452,14 +442,14 @@ export default function BusinessDashboard() {
     )
   }
 
-  // Dashboard principal si ya hay un negocio registrado
+  // Main dashboard if a business is registered
   return (
     <div className="flex min-h-screen w-full flex-col bg-gray-100">
       <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b bg-white px-4 shrink-0 md:px-6">
         <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
           <a
             className="flex items-center gap-2 text-lg font-semibold md:text-base cursor-pointer"
-            onClick={() => setActiveTab("overview")} // Make Store icon clickable to overview
+            onClick={() => setActiveTab("overview")}
           >
             <Store className="h-6 w-6" />
             <span className="sr-only">LocalBiz</span>
@@ -665,7 +655,7 @@ export default function BusinessDashboard() {
                     <>
                       <div className="flex items-center gap-4">
                         <Avatar className="h-16 w-16">
-                          <AvatarImage src={currentBusiness.logoUrl || "/placeholder.svg?height=60&width=60"} />
+                          <AvatarImage src={currentBusiness.logo_url || "/placeholder.svg?height=60&width=60"} />
                           <AvatarFallback>{currentBusiness.name.charAt(0)}</AvatarFallback>
                         </Avatar>
                         <div>
@@ -731,7 +721,7 @@ export default function BusinessDashboard() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Campaña</TableHead>
-                      <TableHead>Banner</TableHead> {/* New column for banner */}
+                      <TableHead>Banner</TableHead>
                       <TableHead>Estado</TableHead>
                       <TableHead>Presupuesto</TableHead>
                       <TableHead>Impresiones</TableHead>
@@ -792,7 +782,6 @@ export default function BusinessDashboard() {
               </CardContent>
             </Card>
           </TabsContent>
-          {/* Aquí irían las TabsContent para Productos, Analíticas, Configuración */}
           <TabsContent value="products">
             <Card>
               <CardHeader>
