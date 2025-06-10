@@ -32,7 +32,7 @@ interface UserData {
   location: string
   referralCode: string
   referredBy?: string
-  businessId?: string
+  businessId?: string // ID del negocio asociado si es userType: "business"
   verified: boolean
   kycStatus: "pending" | "approved" | "rejected"
   createdAt: Date
@@ -102,7 +102,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         avatar: "/placeholder.svg?height=40&width=40",
         location: "Ciudad de México",
         referralCode: "CARLOS2024",
-        businessId: "biz_001",
+        businessId: "biz_001", // Asignar un ID de negocio para simular que ya tiene uno
         verified: true,
         kycStatus: "approved",
         createdAt: new Date("2024-01-10"),
@@ -159,6 +159,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       kycStatus: "pending",
       createdAt: new Date(),
       lastLogin: new Date(),
+      businessId: userData.userType === "business" ? undefined : undefined, // Asegurar que no tenga businessId al registrarse
     }
 
     setUser(newUser)
@@ -222,7 +223,16 @@ export default function AuthSystem() {
     acceptTerms: false,
   })
   const [errors, setErrors] = useState<any>({})
-  const { login, register, isLoading } = useAuth()
+  const { login, register, isLoading, user } = useAuth() // Obtener 'user' del contexto
+
+  // Si el usuario ya está logueado, no mostrar el AuthSystem
+  // Esto es redundante con main-app.tsx pero puede ayudar a evitar flashes
+  useEffect(() => {
+    if (user) {
+      // No hacemos una redirección aquí, main-app.tsx ya se encarga de renderizar el dashboard
+      // Este componente simplemente no se renderizará si user ya existe.
+    }
+  }, [user])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
