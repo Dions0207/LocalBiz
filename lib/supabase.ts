@@ -29,7 +29,7 @@ export interface Business {
   name: string
   category: string
   description?: string
-  address?: string
+  address?: string | null
   phone?: string
   email?: string
   website?: string
@@ -42,6 +42,10 @@ export interface Business {
   review_count: number
   subscription_plan: "free" | "basic" | "premium" | "enterprise"
   subscription_expiry?: string
+  service_delivery_type?: "physical_location" | "at_client_location" | "remote" | "hybrid"
+  hourly_rate?: number | null
+  fixed_price_services?: any | null // Consider defining a more specific type for this JSONB field later
+  service_areas?: string[] | null
   accepts_crypto: boolean
   accepts_cards: boolean
   status: "pending" | "active" | "suspended"
