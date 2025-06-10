@@ -1,11 +1,11 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Building, MapPin, Phone, Mail, Globe, Tag, Info, AlertCircle, ImageIcon, Upload } from "lucide-react"
+import { Building, MapPin, Phone, Mail, Globe, Tag, Info, AlertCircle, ImageIcon, Upload, Loader2 } from "lucide-react"
 
 interface BusinessRegistrationProps {
   onRegisterSuccess: (businessData: any) => void
@@ -21,12 +21,16 @@ export default function BusinessRegistration({ onRegisterSuccess, onCancel }: Bu
     email: "",
     website: "",
     description: "",
-    logoUrl: "",
-    coverImageUrl: "",
+    logoUrl: "", // This will store the Blob URL after upload
+    coverImageUrl: "", // This will store the Blob URL after upload
   })
   const [errors, setErrors] = useState<any>({})
   const [generalError, setGeneralError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false) // New state for logo upload progress
+  const [isUploadingCover, setIsUploadingCover] = useState(false) // New state for cover image upload progress
+  const [logoPreview, setLogoPreview] = useState<string | null>(null) // For local preview before upload
+  const [coverImagePreview, setCoverImagePreview] = useState<string | null>(null) // For local preview before upload
 
   const validateField = (name: string, value: string) => {
     let fieldError = ""
@@ -51,12 +55,7 @@ export default function BusinessRegistration({ onRegisterSuccess, onCancel }: Bu
       case "description":
         if (!value.trim()) fieldError = "La descripción es obligatoria."
         break
-      case "logoUrl":
-      case "coverImageUrl":
-        if (value.trim() && !/^https?:\/\/\S+\.(png|jpg|jpeg|gif|svg|webp)$/i.test(value)) {
-          fieldError = "URL de imagen inválida (solo .png, .jpg, .jpeg, .gif, .svg, .webp)."
-        }
-        break
+      // Removed URL validation for logoUrl and coverImageUrl as they will be handled by file upload
       default:
         break
     }
@@ -71,6 +70,59 @@ export default function BusinessRegistration({ onRegisterSuccess, onCancel }: Bu
     setGeneralError(null)
   }
 
+  // New handler for file uploads
+  const handleFileUpload = useCallback(
+    async (event: React.ChangeEvent<HTMLInputElement>, fieldName: "logoUrl" | "coverImageUrl") => {
+      const file = event.target.files?.[0]
+      if (!file) return
+
+      setGeneralError(null)
+      setErrors((prevErrors: any) => ({ ...prevErrors, [fieldName]: "" })) // Clear previous errors for this field
+
+      // Set local preview immediately
+      const previewUrl = URL.createObjectURL(file)
+      if (fieldName === "logoUrl") {
+        setLogoPreview(previewUrl)
+      } else {
+        setCoverImagePreview(previewUrl)
+      }
+
+      const setStateUploading = fieldName === "logoUrl" ? setIsUploadingLogo : setIsUploadingCover
+      setStateUploading(true)
+
+      try {
+        const response = await fetch(`/api/upload-image?filename=${file.name}`, {
+          method: "POST",
+          body: file, // Send the file directly in the body
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(
+            errorData.error || `Error al subir ${fieldName === "logoUrl" ? "el logo" : "la imagen de portada"}.`,
+          )
+        }
+
+        const blob = await response.json()
+        setFormData((prevData) => ({ ...prevData, [fieldName]: blob.url })) // Store the Blob URL
+        console.log(`File uploaded successfully for ${fieldName}:`, blob.url)
+      } catch (error: any) {
+        console.error(`Error uploading ${fieldName}:`, error)
+        setErrors((prevErrors: any) => ({ ...prevErrors, [fieldName]: error.message || "Error al subir la imagen." }))
+        setGeneralError("Error al subir una o más imágenes. Por favor, inténtalo de nuevo.")
+        // Clear preview if upload fails
+        if (fieldName === "logoUrl") {
+          setLogoPreview(null)
+        } else {
+          setCoverImagePreview(null)
+        }
+      } finally {
+        setStateUploading(false)
+      }
+    },
+    [],
+  )
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     console.log("Attempting to submit business registration form.")
@@ -78,16 +130,7 @@ export default function BusinessRegistration({ onRegisterSuccess, onCancel }: Bu
     let formIsValid = true
     const currentErrors: any = {}
 
-    const fieldsToValidate = [
-      "name",
-      "category",
-      "address",
-      "phone",
-      "email",
-      "description",
-      "logoUrl",
-      "coverImageUrl",
-    ]
+    const fieldsToValidate = ["name", "category", "address", "phone", "email", "description"]
     fieldsToValidate.forEach((field) => {
       if (!validateField(field, (formData as any)[field])) {
         formIsValid = false
@@ -95,11 +138,24 @@ export default function BusinessRegistration({ onRegisterSuccess, onCancel }: Bu
       }
     })
 
+    // Validate that logoUrl is present after upload (it's required)
+    if (!formData.logoUrl) {
+      formIsValid = false
+      currentErrors.logoUrl = "El logo es obligatorio."
+    }
+    // coverImageUrl is optional, so no validation needed here
+
     setErrors(currentErrors)
 
     if (!formIsValid) {
       setGeneralError("Por favor, corrige los errores en el formulario.")
       console.log("Form validation failed:", currentErrors)
+      return
+    }
+
+    // Prevent submission if any uploads are still in progress
+    if (isUploadingLogo || isUploadingCover) {
+      setGeneralError("Por favor, espera a que todas las imágenes terminen de subirse antes de registrar el negocio.")
       return
     }
 
@@ -274,30 +330,34 @@ export default function BusinessRegistration({ onRegisterSuccess, onCancel }: Bu
             <h3 className="text-lg font-semibold flex items-center">
               <ImageIcon className="h-5 w-5 mr-2" /> Imágenes del Negocio
             </h3>
-            <p className="text-sm text-gray-600">
-              Pega la URL de tus imágenes. Para subir archivos, necesitarías un backend.
-            </p>
+            <p className="text-sm text-gray-600">Sube tus imágenes directamente aquí.</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label htmlFor="logoUrl" className="text-sm font-medium">
-                  URL del Logo *
+                <label htmlFor="logoUpload" className="text-sm font-medium">
+                  Subir Logo *
                 </label>
                 <div className="relative">
                   <Upload className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                   <Input
-                    id="logoUrl"
-                    name="logoUrl"
-                    placeholder="https://ejemplo.com/logo.png"
-                    value={formData.logoUrl}
-                    onChange={handleChange}
-                    className="pl-10"
+                    id="logoUpload"
+                    name="logoUpload"
+                    type="file" // Changed to file input
+                    accept="image/*" // Accept only image files
+                    onChange={(e) => handleFileUpload(e, "logoUrl")}
+                    className="pl-10 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"
+                    disabled={isUploadingLogo} // Disable input while uploading
                   />
+                  {isUploadingLogo && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 rounded-md">
+                      <Loader2 className="h-6 w-6 animate-spin text-violet-500" />
+                    </div>
+                  )}
                 </div>
                 {errors.logoUrl && <p className="text-red-600 text-xs mt-1">{errors.logoUrl}</p>}
-                {formData.logoUrl && !errors.logoUrl && (
+                {(logoPreview || formData.logoUrl) && !errors.logoUrl && (
                   <div className="mt-2 flex justify-center">
                     <img
-                      src={formData.logoUrl || "/placeholder.svg"}
+                      src={logoPreview || formData.logoUrl || "/placeholder.svg"}
                       alt="Logo Preview"
                       className="max-w-[100px] max-h-[100px] object-contain border rounded-md"
                     />
@@ -305,25 +365,31 @@ export default function BusinessRegistration({ onRegisterSuccess, onCancel }: Bu
                 )}
               </div>
               <div className="space-y-2">
-                <label htmlFor="coverImageUrl" className="text-sm font-medium">
-                  URL de Imagen de Portada (Opcional)
+                <label htmlFor="coverImageUpload" className="text-sm font-medium">
+                  Subir Imagen de Portada (Opcional)
                 </label>
                 <div className="relative">
                   <Upload className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                   <Input
-                    id="coverImageUrl"
-                    name="coverImageUrl"
-                    placeholder="https://ejemplo.com/portada.jpg"
-                    value={formData.coverImageUrl}
-                    onChange={handleChange}
-                    className="pl-10"
+                    id="coverImageUpload"
+                    name="coverImageUpload"
+                    type="file" // Changed to file input
+                    accept="image/*" // Accept only image files
+                    onChange={(e) => handleFileUpload(e, "coverImageUrl")}
+                    className="pl-10 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"
+                    disabled={isUploadingCover} // Disable input while uploading
                   />
+                  {isUploadingCover && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 rounded-md">
+                      <Loader2 className="h-6 w-6 animate-spin text-violet-500" />
+                    </div>
+                  )}
                 </div>
                 {errors.coverImageUrl && <p className="text-red-600 text-xs mt-1">{errors.coverImageUrl}</p>}
-                {formData.coverImageUrl && !errors.coverImageUrl && (
+                {(coverImagePreview || formData.coverImageUrl) && !errors.coverImageUrl && (
                   <div className="mt-2 flex justify-center">
                     <img
-                      src={formData.coverImageUrl || "/placeholder.svg"}
+                      src={coverImagePreview || formData.coverImageUrl || "/placeholder.svg"}
                       alt="Cover Image Preview"
                       className="max-w-full h-32 object-cover border rounded-md"
                     />
@@ -353,10 +419,15 @@ export default function BusinessRegistration({ onRegisterSuccess, onCancel }: Bu
           </div>
 
           <div className="flex justify-end gap-3">
-            <Button type="button" variant="outline" onClick={onCancel} disabled={isLoading}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onCancel}
+              disabled={isLoading || isUploadingLogo || isUploadingCover}
+            >
               Cancelar
             </Button>
-            <Button type="submit" disabled={isLoading}>
+            <Button type="submit" disabled={isLoading || isUploadingLogo || isUploadingCover}>
               {isLoading ? "Registrando..." : "Registrar Negocio"}
             </Button>
           </div>
