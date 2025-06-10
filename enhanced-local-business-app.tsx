@@ -255,10 +255,10 @@ export default function EnhancedLocalBusinessApp() {
                 className="pl-10 bg-white/90 border-white/30"
               />
             </div>
-            <Button variant="secondary" size="icon" className="bg-white/20 text-white border-white/30">
+            <Button variant="outline" size="icon" className="bg-white/20 text-white border-white/30">
               <Filter className="h-4 w-4" />
             </Button>
-            <Button variant="secondary" size="icon" className="bg-white/20 text-white border-white/30">
+            <Button variant="outline" size="icon" className="bg-white/20 text-white border-white/30">
               <MapPin className="h-4 w-4" />
             </Button>
           </div>
