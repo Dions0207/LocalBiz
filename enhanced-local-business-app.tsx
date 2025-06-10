@@ -222,22 +222,22 @@ export default function EnhancedLocalBusinessApp() {
                 </div>
               </div>
               <div className="hidden md:flex items-center space-x-2">
-                <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
+                <Badge variant="outline" className="bg-white/20 text-white border-white/30">
                   <Bitcoin className="h-3 w-3 mr-1" />
                   USDT: ${usdtPrice.toFixed(3)}
                 </Badge>
-                <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
+                <Badge variant="outline" className="bg-white/20 text-white border-white/30">
                   📍 {userLocation ? "Ubicación detectada" : "Detectando..."}
                 </Badge>
               </div>
             </div>
 
             <div className="flex items-center space-x-2">
-              <Button variant="secondary" size="sm" className="bg-white/20 text-white border-white/30">
+              <Button variant="outline" size="sm" className="bg-white/20 text-white border-white/30">
                 <Wallet className="h-4 w-4 mr-2" />
                 P2P Exchange
               </Button>
-              <Button variant="secondary" size="sm" className="bg-white/20 text-white border-white/30">
+              <Button variant="outline" size="sm" className="bg-white/20 text-white border-white/30">
                 <Plus className="h-4 w-4 mr-2" />
                 Registrar Negocio
               </Button>
