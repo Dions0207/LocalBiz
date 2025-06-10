@@ -1,16 +1,21 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import { useAuth } from "./auth-system"
+import BusinessRegistration from "./business-registration"
 import {
+  PlusCircle,
   Store,
-  BarChart3,
+  BarChart,
   DollarSign,
+  Settings,
+  ArrowLeft,
+  BarChart3,
   Users,
   Star,
   TrendingUp,
@@ -19,7 +24,6 @@ import {
   Globe,
   Instagram,
   Facebook,
-  Settings,
   Bell,
   CreditCard,
   Bitcoin,
@@ -31,28 +35,33 @@ import {
   LogOut,
   CheckCircle,
 } from "lucide-react"
+import { Progress } from "@/components/ui/progress"
+import { Separator } from "@/components/ui/separator"
 
 interface BusinessData {
   id: string
   name: string
   category: string
   description: string
+  status: "pending" | "active" | "rejected"
+  verified: boolean
+  featured: boolean
+  rating: number
+  review_count: number
+  subscription_plan: string
+  owner_id: string
+  images: string[]
   address: string
   phone: string
+  whatsapp: string
   email: string
   website: string
   instagram: string
   facebook: string
-  hours: { [key: string]: { open: string; close: string; closed: boolean } }
-  images: string[]
-  verified: boolean
-  featured: boolean
-  rating: number
-  reviewCount: number
+  hours: any // Consider defining a more specific type for hours
   monthlyRevenue: number
   totalOrders: number
   activePromotions: number
-  subscriptionPlan: "free" | "basic" | "premium" | "enterprise"
   subscriptionExpiry: Date
   paymentMethods: string[]
   acceptsCrypto: boolean
@@ -86,108 +95,151 @@ interface Analytics {
 
 export default function BusinessDashboard() {
   const { user, switchToCustomerMode, logout } = useAuth()
+  const [userBusinesses, setUserBusinesses] = useState<BusinessData[]>([])
+  const [loading, setLoading] = useState(true)
+  const [showRegistrationForm, setShowRegistrationForm] = useState(false)
+  const [selectedBusiness, setSelectedBusiness] = useState<BusinessData | null>(null)
   const [currentView, setCurrentView] = useState("overview")
   const [businessData, setBusinessData] = useState<BusinessData | null>(null)
   const [orders, setOrders] = useState<Order[]>([])
   const [analytics, setAnalytics] = useState<Analytics | null>(null)
   const [editMode, setEditMode] = useState(false)
 
+  useEffect(() => {
+    if (user?.id) {
+      fetchUserBusinesses(user.id)
+    }
+  }, [user])
+
+  const fetchUserBusinesses = async (userId: string) => {
+    setLoading(true)
+    try {
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 500))
+
+      // Mock data for demonstration
+      const mockBusinesses: BusinessData[] = [
+        {
+          id: "biz_001",
+          name: "Tacos El Güero",
+          category: "food",
+          description: "Los mejores tacos al pastor de la zona.",
+          status: "active",
+          verified: true,
+          featured: true,
+          rating: 4.8,
+          review_count: 234,
+          subscription_plan: "premium",
+          owner_id: user?.id || "usr_002", // Ensure this matches a test user if needed
+          images: ["/placeholder.svg?height=200&width=300"],
+          address: "Calle Falsa 123, CDMX",
+          phone: "+525512345678",
+          whatsapp: "+525512345678",
+          email: "tacos@elguero.com",
+          website: "https://tacoselguero.com",
+          instagram: "@tacoselguero",
+          facebook: "TacosElGueroOficial",
+          hours: {
+            Lunes: { open: "08:00", close: "22:00", active: true },
+            Martes: { open: "08:00", close: "22:00", active: true },
+            Miércoles: { open: "08:00", close: "22:00", active: true },
+            Jueves: { open: "08:00", close: "22:00", active: true },
+            Viernes: { open: "08:00", close: "23:00", active: true },
+            Sábado: { open: "09:00", close: "23:00", active: true },
+            Domingo: { open: "09:00", close: "22:00", active: true },
+          },
+          monthlyRevenue: 15750.0,
+          totalOrders: 456,
+          activePromotions: 2,
+          subscriptionExpiry: new Date("2024-12-31"),
+          paymentMethods: ["USDT", "USD", "Cash", "Cards"],
+          acceptsCrypto: true,
+          acceptsCards: true,
+        },
+        // Add more mock businesses if needed for different user IDs
+      ]
+
+      // Filter mock businesses by owner_id
+      const filteredBusinesses = mockBusinesses.filter((b) => b.owner_id === userId)
+      setUserBusinesses(filteredBusinesses)
+    } catch (error) {
+      console.error("Failed to fetch user businesses:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleBusinessRegistered = (newBusiness: BusinessData) => {
+    setUserBusinesses((prev) => [...prev, newBusiness])
+    setShowRegistrationForm(false)
+    setSelectedBusiness(newBusiness) // Automatically select the newly registered business
+  }
+
   // Simular datos del negocio
   useEffect(() => {
-    const sampleBusiness: BusinessData = {
-      id: "biz_001",
-      name: "Tacos El Güero",
-      category: "food",
-      description: "Los mejores tacos al pastor de la zona. Más de 20 años sirviendo sabor auténtico.",
-      address: "Av. Insurgentes Sur 1234, Roma Norte, CDMX",
-      phone: "+52 55 1234-5678",
-      email: "contacto@tacosguero.com",
-      website: "www.tacosguero.com",
-      instagram: "@tacosguero",
-      facebook: "Tacos El Güero",
-      hours: {
-        monday: { open: "08:00", close: "22:00", closed: false },
-        tuesday: { open: "08:00", close: "22:00", closed: false },
-        wednesday: { open: "08:00", close: "22:00", closed: false },
-        thursday: { open: "08:00", close: "22:00", closed: false },
-        friday: { open: "08:00", close: "23:00", closed: false },
-        saturday: { open: "08:00", close: "23:00", closed: false },
-        sunday: { open: "09:00", close: "21:00", closed: false },
-      },
-      images: ["/placeholder.svg?height=300&width=400"],
-      verified: true,
-      featured: true,
-      rating: 4.8,
-      reviewCount: 234,
-      monthlyRevenue: 15750.0,
-      totalOrders: 456,
-      activePromotions: 2,
-      subscriptionPlan: "premium",
-      subscriptionExpiry: new Date("2024-12-31"),
-      paymentMethods: ["USDT", "USD", "Cash", "Cards"],
-      acceptsCrypto: true,
-      acceptsCards: true,
+    if (userBusinesses.length > 0) {
+      const sampleBusiness: BusinessData = userBusinesses[0]
+
+      const sampleOrders: Order[] = [
+        {
+          id: "ord_001",
+          customerName: "María González",
+          items: ["3x Tacos al Pastor", "1x Quesadilla", "2x Refrescos"],
+          total: 185.0,
+          currency: "MXN",
+          status: "preparing",
+          orderDate: new Date(Date.now() - 1000 * 60 * 15),
+          paymentMethod: "Efectivo",
+          customerPhone: "+52 55 1111-1111",
+          notes: "Sin cebolla en los tacos",
+        },
+        {
+          id: "ord_002",
+          customerName: "Carlos Mendoza",
+          items: ["5x Tacos al Pastor", "1x Agua"],
+          total: 8.5,
+          currency: "USDT",
+          status: "ready",
+          orderDate: new Date(Date.now() - 1000 * 60 * 30),
+          paymentMethod: "USDT",
+          customerPhone: "+52 55 2222-2222",
+          notes: "Para llevar",
+        },
+        {
+          id: "ord_003",
+          customerName: "Ana Rodríguez",
+          items: ["2x Quesadillas", "1x Salsa Verde"],
+          total: 120.0,
+          currency: "MXN",
+          status: "delivered",
+          orderDate: new Date(Date.now() - 1000 * 60 * 60),
+          paymentMethod: "Tarjeta",
+          customerPhone: "+52 55 3333-3333",
+          notes: "",
+        },
+      ]
+
+      const sampleAnalytics: Analytics = {
+        todayRevenue: 1250.0,
+        todayOrders: 23,
+        weekRevenue: 8750.0,
+        weekOrders: 156,
+        monthRevenue: 15750.0,
+        monthOrders: 456,
+        topProducts: [
+          { name: "Tacos al Pastor", sales: 234 },
+          { name: "Quesadillas", sales: 156 },
+          { name: "Salsas", sales: 89 },
+        ],
+        customerSatisfaction: 4.8,
+        repeatCustomers: 67,
+      }
+
+      setBusinessData(sampleBusiness)
+      setOrders(sampleOrders)
+      setAnalytics(sampleAnalytics)
     }
-
-    const sampleOrders: Order[] = [
-      {
-        id: "ord_001",
-        customerName: "María González",
-        items: ["3x Tacos al Pastor", "1x Quesadilla", "2x Refrescos"],
-        total: 185.0,
-        currency: "MXN",
-        status: "preparing",
-        orderDate: new Date(Date.now() - 1000 * 60 * 15),
-        paymentMethod: "Efectivo",
-        customerPhone: "+52 55 1111-1111",
-        notes: "Sin cebolla en los tacos",
-      },
-      {
-        id: "ord_002",
-        customerName: "Carlos Mendoza",
-        items: ["5x Tacos al Pastor", "1x Agua"],
-        total: 8.5,
-        currency: "USDT",
-        status: "ready",
-        orderDate: new Date(Date.now() - 1000 * 60 * 30),
-        paymentMethod: "USDT",
-        customerPhone: "+52 55 2222-2222",
-        notes: "Para llevar",
-      },
-      {
-        id: "ord_003",
-        customerName: "Ana Rodríguez",
-        items: ["2x Quesadillas", "1x Salsa Verde"],
-        total: 120.0,
-        currency: "MXN",
-        status: "delivered",
-        orderDate: new Date(Date.now() - 1000 * 60 * 60),
-        paymentMethod: "Tarjeta",
-        customerPhone: "+52 55 3333-3333",
-        notes: "",
-      },
-    ]
-
-    const sampleAnalytics: Analytics = {
-      todayRevenue: 1250.0,
-      todayOrders: 23,
-      weekRevenue: 8750.0,
-      weekOrders: 156,
-      monthRevenue: 15750.0,
-      monthOrders: 456,
-      topProducts: [
-        { name: "Tacos al Pastor", sales: 234 },
-        { name: "Quesadillas", sales: 156 },
-        { name: "Salsas", sales: 89 },
-      ],
-      customerSatisfaction: 4.8,
-      repeatCustomers: 67,
-    }
-
-    setBusinessData(sampleBusiness)
-    setOrders(sampleOrders)
-    setAnalytics(sampleAnalytics)
-  }, [])
+  }, [userBusinesses])
 
   const updateOrderStatus = (orderId: string, newStatus: Order["status"]) => {
     setOrders((prev) => prev.map((order) => (order.id === orderId ? { ...order, status: newStatus } : order)))
@@ -261,6 +313,52 @@ export default function BusinessDashboard() {
     </header>
   )
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <p>Cargando tu dashboard de negocio...</p>
+      </div>
+    )
+  }
+
+  if (showRegistrationForm) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-4xl mx-auto px-4">
+          <div className="flex items-center gap-2 mb-6">
+            <Button variant="ghost" size="icon" onClick={() => setShowRegistrationForm(false)}>
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <h2 className="text-2xl font-bold">Registrar Nuevo Negocio</h2>
+          </div>
+          <BusinessRegistration onBusinessRegistered={handleBusinessRegistered} />
+        </div>
+      </div>
+    )
+  }
+
+  if (userBusinesses.length === 0) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 p-4 text-center">
+        <Store className="h-24 w-24 text-blue-600 mb-6" />
+        <h1 className="text-3xl font-bold mb-3">¡Bienvenido, {user?.name}!</h1>
+        <p className="text-xl text-gray-700 mb-8">
+          Parece que aún no tienes un negocio registrado. ¡Es hora de empezar a vender!
+        </p>
+        <Button size="lg" onClick={() => setShowRegistrationForm(true)}>
+          <PlusCircle className="h-5 w-5 mr-2" />
+          Registrar mi Primer Negocio
+        </Button>
+        <Button variant="link" onClick={logout} className="mt-4 text-gray-600">
+          Cerrar Sesión
+        </Button>
+      </div>
+    )
+  }
+
+  // If there are businesses, display the dashboard for the first one (or selected one)
+  const currentBusiness = selectedBusiness || userBusinesses[0]
+
   const renderOverview = () => (
     <div className="space-y-6">
       {/* Quick Stats */}
@@ -311,7 +409,7 @@ export default function BusinessDashboard() {
               <div className="ml-4">
                 <p className="text-sm opacity-90">Rating</p>
                 <p className="text-2xl font-bold">{businessData?.rating}</p>
-                <p className="text-xs opacity-75">{businessData?.reviewCount} reviews</p>
+                <p className="text-xs opacity-75">{businessData?.review_count} reviews</p>
               </div>
             </div>
           </CardContent>
@@ -351,7 +449,7 @@ export default function BusinessDashboard() {
             </div>
             <div className="text-center p-4 bg-blue-50 rounded-lg">
               <CreditCard className="h-8 w-8 text-blue-600 mx-auto mb-2" />
-              <p className="font-semibold text-blue-800">Plan {businessData?.subscriptionPlan}</p>
+              <p className="font-semibold text-blue-800">Plan {businessData?.subscription_plan}</p>
               <p className="text-sm text-blue-600">Expira: {businessData?.subscriptionExpiry.toLocaleDateString()}</p>
             </div>
             <div className="text-center p-4 bg-purple-50 rounded-lg">
@@ -786,47 +884,157 @@ export default function BusinessDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50">
-      {renderHeader()}
-
-      <div className="px-4 py-4 pb-20">{renderContent()}</div>
-
-      {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-30">
-        <div className="grid grid-cols-4 py-2">
-          <Button
-            variant="ghost"
-            className={`flex flex-col items-center py-2 ${currentView === "overview" ? "text-green-600" : ""}`}
-            onClick={() => setCurrentView("overview")}
-          >
-            <BarChart3 className="h-5 w-5" />
-            <span className="text-xs mt-1">Resumen</span>
-          </Button>
-          <Button
-            variant="ghost"
-            className={`flex flex-col items-center py-2 ${currentView === "orders" ? "text-green-600" : ""}`}
-            onClick={() => setCurrentView("orders")}
-          >
-            <Package className="h-5 w-5" />
-            <span className="text-xs mt-1">Órdenes</span>
-          </Button>
-          <Button
-            variant="ghost"
-            className={`flex flex-col items-center py-2 ${currentView === "analytics" ? "text-green-600" : ""}`}
-            onClick={() => setCurrentView("analytics")}
-          >
-            <TrendingUp className="h-5 w-5" />
-            <span className="text-xs mt-1">Analytics</span>
-          </Button>
-          <Button
-            variant="ghost"
-            className={`flex flex-col items-center py-2 ${currentView === "profile" ? "text-green-600" : ""}`}
-            onClick={() => setCurrentView("profile")}
-          >
-            <Store className="h-5 w-5" />
-            <span className="text-xs mt-1">Negocio</span>
-          </Button>
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-6xl mx-auto px-4">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold">Dashboard de Negocio</h1>
+          <div className="flex items-center gap-4">
+            <Button variant="outline" onClick={() => setShowRegistrationForm(true)}>
+              <PlusCircle className="h-4 w-4 mr-2" />
+              Registrar Otro Negocio
+            </Button>
+            <Button onClick={logout}>Cerrar Sesión</Button>
+          </div>
         </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Card className="col-span-2">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Store className="h-6 w-6 text-blue-600" />
+                {currentBusiness.name}
+                {currentBusiness.verified && (
+                  <Badge variant="secondary" className="bg-blue-100 text-blue-700">
+                    Verificado
+                  </Badge>
+                )}
+                {currentBusiness.featured && (
+                  <Badge variant="secondary" className="bg-yellow-100 text-yellow-700">
+                    Destacado
+                  </Badge>
+                )}
+              </CardTitle>
+              <CardDescription>{currentBusiness.description}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center gap-4">
+                <img
+                  src={currentBusiness.images[0] || "/placeholder.svg"}
+                  alt={currentBusiness.name}
+                  className="w-24 h-24 object-cover rounded-lg"
+                />
+                <div>
+                  <p className="text-sm text-gray-600">
+                    Categoría: <span className="font-medium">{currentBusiness.category}</span>
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Plan: <span className="font-medium">{currentBusiness.subscription_plan}</span>
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Estado:{" "}
+                    <Badge
+                      className={
+                        currentBusiness.status === "active"
+                          ? "bg-green-100 text-green-700"
+                          : "bg-orange-100 text-orange-700"
+                      }
+                    >
+                      {currentBusiness.status}
+                    </Badge>
+                  </p>
+                </div>
+              </div>
+              <Separator />
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="font-medium">Dirección:</p>
+                  <p>{currentBusiness.address}</p>
+                </div>
+                <div>
+                  <p className="font-medium">Contacto:</p>
+                  <p>Tel: {currentBusiness.phone}</p>
+                  <p>WhatsApp: {currentBusiness.whatsapp}</p>
+                  <p>Email: {currentBusiness.email}</p>
+                </div>
+              </div>
+              <Button className="w-full">Gestionar Perfil del Negocio</Button>
+            </CardContent>
+          </Card>
+
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart className="h-5 w-5 text-purple-600" /> Rendimiento
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <p className="text-sm font-medium">Visitas al Perfil</p>
+                  <Progress value={75} className="w-full" />
+                  <p className="text-xs text-gray-500">750 visitas este mes</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Interacciones (Llamadas/Pedidos)</p>
+                  <Progress value={50} className="w-full" />
+                  <p className="text-xs text-gray-500">50 interacciones este mes</p>
+                </div>
+                <Button variant="outline" className="w-full">
+                  Ver Analytics Detallados
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <DollarSign className="h-5 w-5 text-green-600" /> Finanzas
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <p className="text-sm font-medium">Ganancias por Pedidos</p>
+                  <p className="text-lg font-bold text-green-600">$1,250 USDT</p>
+                </div>
+                <div className="flex justify-between items-center">
+                  <p className="text-sm font-medium">Comisiones Pagadas</p>
+                  <p className="text-lg font-bold text-red-600">$125 USDT</p>
+                </div>
+                <Button variant="outline" className="w-full">
+                  Ver Historial de Transacciones
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        <Card className="mt-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Settings className="h-5 w-5 text-gray-600" /> Gestión de Anuncios y Campañas
+            </CardTitle>
+            <CardDescription>Crea y gestiona tus campañas publicitarias para llegar a más clientes.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button
+              size="lg"
+              className="w-full bg-blue-600 hover:bg-blue-700"
+              onClick={() => setShowRegistrationForm(true)}
+            >
+              <PlusCircle className="h-5 w-5 mr-2" />
+              Crear Nueva Campaña de Anuncio
+            </Button>
+            <Separator />
+            <h3 className="text-lg font-semibold mb-2">Mis Campañas Activas</h3>
+            {/* Placeholder for active campaigns list */}
+            <div className="text-center text-gray-500 py-4 border rounded-lg">
+              No tienes campañas activas. ¡Crea una ahora!
+            </div>
+            <Button variant="outline" className="w-full">
+              Ver Todas las Campañas
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )
