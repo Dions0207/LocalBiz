@@ -4,6 +4,7 @@ import AuthSystem from "./auth-system"
 import CustomerDashboard from "./customer-dashboard"
 import BusinessDashboard from "./business-dashboard"
 import AdminDashboard from "./admin-dashboard"
+import MobileFirstLocalBiz from "./mobile-first-localbiz"
 
 function AppContent() {
   const { user } = useAuth()
@@ -15,13 +16,13 @@ function AppContent() {
   // Renderizar dashboard según el tipo de usuario
   switch (user.userType) {
     case "customer":
-      return <CustomerDashboard />
+      return <MobileFirstLocalBiz />
     case "business":
       return <BusinessDashboard />
     case "admin":
       return <AdminDashboard />
     case "affiliate":
-      return <CustomerDashboard /> // Los afiliados usan el dashboard de cliente
+      return <MobileFirstLocalBiz /> // Los afiliados usan el dashboard de cliente
     default:
       return <CustomerDashboard />
   }

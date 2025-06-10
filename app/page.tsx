@@ -1,9 +1,4 @@
-import MobileFirstLocalBiz from "../mobile-first-localbiz"
-
+import MainApp from "../main-app"
 export default function Home() {
-  return (
-    <main>
-      <MobileFirstLocalBiz />
-    </main>
-  )
+  return <MainApp />
 }
