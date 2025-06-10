@@ -31,6 +31,7 @@ import {
   DollarSign,
   Bitcoin,
 } from "lucide-react"
+import { BackButton } from "@/components/back-button"
 
 export default function EnhancedLocalBusinessApp() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -212,6 +213,7 @@ export default function EnhancedLocalBusinessApp() {
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
+              <BackButton />
               <div className="flex items-center space-x-2">
                 <div className="bg-white rounded-full p-2">
                   <Store className="h-8 w-8 text-purple-600" />
@@ -717,7 +719,7 @@ export default function EnhancedLocalBusinessApp() {
                     </div>
                     <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
                       <h4 className="font-semibold text-sm">⚡ Sin comisiones</h4>
-                      <p className="text-xs text-gray-600">Pagos `{"&gt;"}`$50 USDT</p>
+                      <p className="text-xs text-gray-600">Pagos {">"}$50 USDT</p>
                     </div>
                     <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
                       <h4 className="font-semibold text-sm">💎 Descuentos exclusivos</h4>

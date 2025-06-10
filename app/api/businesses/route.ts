@@ -53,10 +53,6 @@ export async function POST(request: NextRequest) {
       .insert([
         {
           ...businessData,
-          service_delivery_type: businessData.serviceDeliveryType,
-          hourly_rate: businessData.hourlyRate ? Number.parseFloat(businessData.hourlyRate) : null,
-          fixed_price_services: businessData.fixedPriceServices || null,
-          service_areas: businessData.serviceAreas || null,
           status: "pending",
           verified: false,
           featured: false,

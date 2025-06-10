@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent } from "@/components/ui/tabs"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
-import { MapPin, Upload, CheckCircle, Camera, Instagram, Facebook, Plus, MinusCircle } from "lucide-react"
+import { MapPin, Upload, CheckCircle, Camera, Instagram, Facebook, Plus } from "lucide-react"
 
 export default function BusinessRegistration() {
   const [currentStep, setCurrentStep] = useState(1)
@@ -28,10 +28,6 @@ export default function BusinessRegistration() {
     images: [],
     verified: false,
     featured: false,
-    serviceDeliveryType: "physical_location",
-    hourlyRate: "",
-    fixedPriceServices: [],
-    serviceAreas: [],
   })
 
   const categories = [
@@ -94,25 +90,6 @@ export default function BusinessRegistration() {
     { id: 2, name: "Ubicación y Contacto", icon: "📍" },
     { id: 3, name: "Fotos y Multimedia", icon: "📸" },
     { id: 4, name: "Plan y Verificación", icon: "✅" },
-  ]
-
-  const serviceDeliveryOptions = [
-    { id: "physical_location", name: "Tengo un local físico", description: "Los clientes visitan mi ubicación." },
-    {
-      id: "at_client_location",
-      name: "Voy a domicilio",
-      description: "Ofrezco servicios en la ubicación del cliente.",
-    },
-    {
-      id: "remote",
-      name: "Servicios remotos/online",
-      description: "Mis servicios se ofrecen a distancia (videollamada, etc.).",
-    },
-    {
-      id: "hybrid",
-      name: "Ambos (Físico y a Domicilio/Remoto)",
-      description: "Ofrezco servicios en mi local y a domicilio/remoto.",
-    },
   ]
 
   return (
@@ -185,23 +162,6 @@ export default function BusinessRegistration() {
                       ))}
                     </select>
                   </div>
-
-                  <div className="space-y-2">
-                    <Label>Tipo de Entrega del Servicio *</Label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {serviceDeliveryOptions.map((option) => (
-                        <Button
-                          key={option.id}
-                          variant={formData.serviceDeliveryType === option.id ? "default" : "outline"}
-                          onClick={() => setFormData({ ...formData, serviceDeliveryType: option.id })}
-                          className={`flex-col h-auto py-4 ${formData.serviceDeliveryType === option.id ? "bg-blue-600 text-white" : ""}`}
-                        >
-                          <span className="font-semibold">{option.name}</span>
-                          <span className="text-xs text-center opacity-80">{option.description}</span>
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -242,23 +202,19 @@ export default function BusinessRegistration() {
                 <CardDescription>Ayuda a tus clientes a encontrarte y contactarte fácilmente</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                {formData.serviceDeliveryType !== "remote" && (
-                  <div className="space-y-2">
-                    <Label htmlFor="address">
-                      Dirección Completa {formData.serviceDeliveryType === "physical_location" ? "*" : "(Opcional)"}
-                    </Label>
-                    <Input
-                      id="address"
-                      placeholder="Calle, número, colonia, ciudad"
-                      value={formData.address}
-                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    />
-                    <Button variant="outline" size="sm" className="mt-2">
-                      <MapPin className="h-4 w-4 mr-2" />
-                      Usar mi ubicación actual
-                    </Button>
-                  </div>
-                )}
+                <div className="space-y-2">
+                  <Label htmlFor="address">Dirección Completa *</Label>
+                  <Input
+                    id="address"
+                    placeholder="Calle, número, colonia, ciudad"
+                    value={formData.address}
+                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  />
+                  <Button variant="outline" size="sm" className="mt-2">
+                    <MapPin className="h-4 w-4 mr-2" />
+                    Usar mi ubicación actual
+                  </Button>
+                </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
@@ -341,116 +297,6 @@ export default function BusinessRegistration() {
                     ))}
                   </div>
                 </div>
-
-                {(formData.serviceDeliveryType === "at_client_location" ||
-                  formData.serviceDeliveryType === "remote" ||
-                  formData.serviceDeliveryType === "hybrid") && (
-                  <>
-                    <div className="space-y-4">
-                      <Label>Tarifa por Hora (Opcional)</Label>
-                      <Input
-                        id="hourlyRate"
-                        type="number"
-                        placeholder="Ej: 15.00"
-                        value={formData.hourlyRate}
-                        onChange={(e) => setFormData({ ...formData, hourlyRate: e.target.value })}
-                      />
-                      <p className="text-sm text-gray-500">Si ofreces servicios por hora (ej. enfermera, tutor).</p>
-                    </div>
-
-                    <div className="space-y-4">
-                      <Label>Servicios de Precio Fijo (Opcional)</Label>
-                      <p className="text-sm text-gray-500 mb-2">
-                        Describe tus servicios con precio fijo (ej. manicura completa $20).
-                      </p>
-                      {formData.fixedPriceServices.map((service, index) => (
-                        <div key={index} className="flex items-center space-x-2 mb-2">
-                          <Input
-                            placeholder="Ej: Manicura Completa"
-                            value={service.name}
-                            onChange={(e) => {
-                              const newServices = [...formData.fixedPriceServices]
-                              newServices[index].name = e.target.value
-                              setFormData({ ...formData, fixedPriceServices: newServices })
-                            }}
-                          />
-                          <Input
-                            placeholder="Precio (USD)"
-                            type="number"
-                            className="w-24"
-                            value={service.price}
-                            onChange={(e) => {
-                              const newServices = [...formData.fixedPriceServices]
-                              newServices[index].price = e.target.value
-                              setFormData({ ...formData, fixedPriceServices: newServices })
-                            }}
-                          />
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => {
-                              const newServices = formData.fixedPriceServices.filter((_, i) => i !== index)
-                              setFormData({ ...formData, fixedPriceServices: newServices })
-                            }}
-                          >
-                            <MinusCircle className="h-4 w-4 text-red-500" />
-                          </Button>
-                        </div>
-                      ))}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          setFormData({
-                            ...formData,
-                            fixedPriceServices: [...formData.fixedPriceServices, { name: "", price: "" }],
-                          })
-                        }
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Agregar Servicio
-                      </Button>
-                    </div>
-
-                    <div className="space-y-4">
-                      <Label>Zonas de Servicio (Opcional)</Label>
-                      <p className="text-sm text-gray-500 mb-2">
-                        Ciudades, colonias o códigos postales donde ofreces tus servicios.
-                      </p>
-                      {formData.serviceAreas.map((area, index) => (
-                        <div key={index} className="flex items-center space-x-2 mb-2">
-                          <Input
-                            placeholder="Ej: Roma Norte, Condesa"
-                            value={area}
-                            onChange={(e) => {
-                              const newAreas = [...formData.serviceAreas]
-                              newAreas[index] = e.target.value
-                              setFormData({ ...formData, serviceAreas: newAreas })
-                            }}
-                          />
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => {
-                              const newAreas = formData.serviceAreas.filter((_, i) => i !== index)
-                              setFormData({ ...formData, serviceAreas: newAreas })
-                            }}
-                          >
-                            <MinusCircle className="h-4 w-4 text-red-500" />
-                          </Button>
-                        </div>
-                      ))}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setFormData({ ...formData, serviceAreas: [...formData.serviceAreas, ""] })}
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Agregar Zona
-                      </Button>
-                    </div>
-                  </>
-                )}
 
                 <div className="flex justify-between">
                   <Button variant="outline" onClick={() => setCurrentStep(1)}>
