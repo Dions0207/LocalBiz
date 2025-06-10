@@ -30,6 +30,7 @@ import {
   Map,
   List,
 } from "lucide-react"
+import { BackButton } from "@/components/back-button"
 
 export default function CustomerDashboard() {
   const { user, switchToBusinessMode, logout } = useAuth()
@@ -165,13 +166,16 @@ export default function CustomerDashboard() {
     <header className="bg-gradient-to-r from-purple-600 via-blue-600 to-cyan-600 shadow-lg sticky top-0 z-40">
       <div className="px-4 py-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="bg-white rounded-full p-2">
-              <Store className="h-6 w-6 text-purple-600" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-white">LocalBiz</h1>
-              <p className="text-xs text-purple-100">¡Hola, {user?.name}!</p>
+          <div className="flex items-center space-x-4">
+            <BackButton />
+            <div className="flex items-center space-x-2">
+              <div className="bg-white rounded-full p-2">
+                <Store className="h-8 w-8 text-purple-600" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-white">LocalBiz</h1>
+                <p className="text-xs text-purple-100">Crypto-Friendly Business Hub</p>
+              </div>
             </div>
           </div>
 
