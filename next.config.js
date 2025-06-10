@@ -1,8 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    appDir: true,
-  },
+  experimental: {},
   images: {
     domains: ["placeholder.svg", "images.unsplash.com", "via.placeholder.com"],
     unoptimized: true,
