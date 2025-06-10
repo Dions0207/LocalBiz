@@ -1,5 +1,7 @@
 "use client"
 
+import { Label } from "@/components/ui/label"
+
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -7,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import { useAuth } from "./auth-system"
-import BusinessRegistration from "./business-registration"
+import BusinessRegistration from "./business-registration" // Import the BusinessRegistration component
 import {
   PlusCircle,
   Store,
@@ -34,6 +36,7 @@ import {
   User,
   LogOut,
   CheckCircle,
+  Plus,
 } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
@@ -93,17 +96,31 @@ interface Analytics {
   repeatCustomers: number
 }
 
+// Mock Ad Campaign Type
+interface AdCampaign {
+  id: string
+  title: string
+  description: string
+  budget: number
+  duration: number
+  status: "active" | "paused" | "completed"
+  clicks: number
+  impressions: number
+}
+
 export default function BusinessDashboard() {
   const { user, switchToCustomerMode, logout } = useAuth()
   const [userBusinesses, setUserBusinesses] = useState<BusinessData[]>([])
   const [loading, setLoading] = useState(true)
   const [showRegistrationForm, setShowRegistrationForm] = useState(false)
+  const [showAdCreationForm, setShowAdCreationForm] = useState(false) // New state for ad creation form
   const [selectedBusiness, setSelectedBusiness] = useState<BusinessData | null>(null)
   const [currentView, setCurrentView] = useState("overview")
   const [businessData, setBusinessData] = useState<BusinessData | null>(null)
   const [orders, setOrders] = useState<Order[]>([])
   const [analytics, setAnalytics] = useState<Analytics | null>(null)
   const [editMode, setEditMode] = useState(false)
+  const [adCampaigns, setAdCampaigns] = useState<AdCampaign[]>([]) // State for ad campaigns
 
   useEffect(() => {
     if (user?.id) {
@@ -130,9 +147,9 @@ export default function BusinessDashboard() {
           rating: 4.8,
           review_count: 234,
           subscription_plan: "premium",
-          owner_id: user?.id || "usr_002", // Ensure this matches a test user if needed
+          owner_id: "usr_002", // This should match a test business user ID
           images: ["/placeholder.svg?height=200&width=300"],
-          address: "Calle Falsa 123, CDMX",
+          address: "Av. Insurgentes Sur 1234, Roma Norte, CDMX",
           phone: "+525512345678",
           whatsapp: "+525512345678",
           email: "tacos@elguero.com",
@@ -162,6 +179,31 @@ export default function BusinessDashboard() {
       // Filter mock businesses by owner_id
       const filteredBusinesses = mockBusinesses.filter((b) => b.owner_id === userId)
       setUserBusinesses(filteredBusinesses)
+
+      // Mock ad campaigns
+      const mockAdCampaigns: AdCampaign[] = [
+        {
+          id: "ad_001",
+          title: "Gran Apertura - 20% OFF",
+          description: "Descuento en todos los productos por inauguración.",
+          budget: 200,
+          duration: 7,
+          status: "active",
+          clicks: 150,
+          impressions: 5000,
+        },
+        {
+          id: "ad_002",
+          title: "Happy Hour - 2x1 en Bebidas",
+          description: "Promoción de bebidas de 5 PM a 7 PM.",
+          budget: 100,
+          duration: 5,
+          status: "paused",
+          clicks: 80,
+          impressions: 3000,
+        },
+      ]
+      setAdCampaigns(mockAdCampaigns)
     } catch (error) {
       console.error("Failed to fetch user businesses:", error)
     } finally {
@@ -173,9 +215,16 @@ export default function BusinessDashboard() {
     setUserBusinesses((prev) => [...prev, newBusiness])
     setShowRegistrationForm(false)
     setSelectedBusiness(newBusiness) // Automatically select the newly registered business
+    setCurrentView("overview") // Go to overview after registration
   }
 
-  // Simular datos del negocio
+  const handleAdCreated = (newAd: AdCampaign) => {
+    setAdCampaigns((prev) => [...prev, newAd])
+    setShowAdCreationForm(false)
+    setCurrentView("ads") // Go to ads view after creation
+  }
+
+  // Simular datos del negocio (se ejecutará si userBusinesses tiene datos)
   useEffect(() => {
     if (userBusinesses.length > 0) {
       const sampleBusiness: BusinessData = userBusinesses[0]
@@ -292,7 +341,7 @@ export default function BusinessDashboard() {
               <Store className="h-6 w-6 text-green-600" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-white">{businessData?.name || "Mi Negocio"}</h1>
+              <h1 className="text-xl font-bold text-white">{currentBusiness?.name || "Mi Negocio"}</h1>
               <p className="text-xs text-green-100">Panel de Vendedor</p>
             </div>
           </div>
@@ -313,6 +362,144 @@ export default function BusinessDashboard() {
     </header>
   )
 
+  const renderAdCreationForm = () => (
+    <Card className="w-full max-w-2xl mx-auto">
+      <CardHeader className="text-center">
+        <div className="flex items-center justify-between mb-4">
+          <Button variant="ghost" size="icon" onClick={() => setShowAdCreationForm(false)}>
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-full w-16 h-16 flex items-center justify-center mx-auto">
+            <Megaphone className="h-8 w-8 text-white" />
+          </div>
+          <div className="w-10"></div> {/* Spacer */}
+        </div>
+        <CardTitle className="text-2xl">Crear Nueva Campaña de Anuncio</CardTitle>
+        <p className="text-gray-600">Llega a más clientes con promociones destacadas.</p>
+      </CardHeader>
+      <CardContent>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            const newAd: AdCampaign = {
+              id: `ad_${Date.now()}`,
+              title: (e.target as any).title.value,
+              description: (e.target as any).description.value,
+              budget: Number.parseFloat((e.target as any).budget.value),
+              duration: Number.parseInt((e.target as any).duration.value),
+              status: "active",
+              clicks: 0,
+              impressions: 0,
+            }
+            handleAdCreated(newAd)
+            alert("Campaña de anuncio creada (simulado)!")
+          }}
+          className="space-y-4"
+        >
+          <div>
+            <Label htmlFor="ad-title">Título del Anuncio</Label>
+            <Input id="ad-title" name="title" placeholder="Ej: 50% OFF en toda la tienda" required />
+          </div>
+          <div>
+            <Label htmlFor="ad-description">Descripción</Label>
+            <Textarea id="ad-description" name="description" placeholder="Describe tu promoción..." required />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label htmlFor="ad-budget">Presupuesto (USDT)</Label>
+              <Input id="ad-budget" name="budget" placeholder="100" type="number" step="0.01" required />
+            </div>
+            <div>
+              <Label htmlFor="ad-duration">Duración (días)</Label>
+              <Input id="ad-duration" name="duration" placeholder="7" type="number" required />
+            </div>
+          </div>
+          <div>
+            <Label htmlFor="payment-method">Método de Pago</Label>
+            <select id="payment-method" className="w-full p-2 border rounded-md">
+              <option>USDT (Tether)</option>
+              <option>Tarjeta de Crédito</option>
+            </select>
+          </div>
+          <Button type="submit" className="w-full bg-purple-600 hover:bg-purple-700">
+            <Plus className="h-4 w-4 mr-2" />
+            Crear Campaña
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  )
+
+  const renderAdsManagement = () => (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center">
+              <Megaphone className="mr-2 h-5 w-5" />
+              Mis Campañas de Anuncios
+            </div>
+            <Button onClick={() => setShowAdCreationForm(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Nueva Campaña
+            </Button>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {adCampaigns.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <Megaphone className="h-12 w-12 mx-auto mb-4" />
+              <p>Aún no tienes campañas de anuncios. ¡Crea una para empezar a promocionar tu negocio!</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {adCampaigns.map((campaign) => (
+                <Card key={campaign.id} className="border-l-4 border-purple-500">
+                  <CardContent className="pt-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <h3 className="font-bold text-lg">{campaign.title}</h3>
+                      <Badge className={campaign.status === "active" ? "bg-green-500" : "bg-gray-500"}>
+                        {campaign.status === "active" ? "Activa" : "Pausada"}
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-3">{campaign.description}</p>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <p className="font-medium">Presupuesto:</p>
+                        <p>${campaign.budget} USDT</p>
+                      </div>
+                      <div>
+                        <p className="font-medium">Duración:</p>
+                        <p>{campaign.duration} días</p>
+                      </div>
+                      <div>
+                        <p className="font-medium">Clicks:</p>
+                        <p>{campaign.clicks}</p>
+                      </div>
+                      <div>
+                        <p className="font-medium">Impresiones:</p>
+                        <p>{campaign.impressions}</p>
+                      </div>
+                    </div>
+                    <div className="flex space-x-2 mt-4">
+                      <Button size="sm" variant="outline" className="flex-1">
+                        <Edit className="h-4 w-4 mr-2" />
+                        Editar
+                      </Button>
+                      <Button size="sm" variant="outline" className="flex-1">
+                        {campaign.status === "active" ? "Pausar" : "Activar"}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -331,8 +518,19 @@ export default function BusinessDashboard() {
             </Button>
             <h2 className="text-2xl font-bold">Registrar Nuevo Negocio</h2>
           </div>
-          <BusinessRegistration onBusinessRegistered={handleBusinessRegistered} />
+          <BusinessRegistration
+            onBusinessRegistered={handleBusinessRegistered}
+            onCancel={() => setShowRegistrationForm(false)}
+          />
         </div>
+      </div>
+    )
+  }
+
+  if (showAdCreationForm) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-4xl mx-auto px-4">{renderAdCreationForm()}</div>
       </div>
     )
   }
@@ -878,6 +1076,8 @@ export default function BusinessDashboard() {
         return renderAnalytics()
       case "profile":
         return renderProfile()
+      case "ads":
+        return renderAdsManagement() // New case for ads management
       default:
         return renderOverview()
     }
@@ -889,6 +1089,19 @@ export default function BusinessDashboard() {
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold">Dashboard de Negocio</h1>
           <div className="flex items-center gap-4">
+            {userBusinesses.length > 0 && (
+              <select
+                className="p-2 border rounded-md"
+                value={selectedBusiness?.id || ""}
+                onChange={(e) => setSelectedBusiness(userBusinesses.find((b) => b.id === e.target.value) || null)}
+              >
+                {userBusinesses.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name}
+                  </option>
+                ))}
+              </select>
+            )}
             <Button variant="outline" onClick={() => setShowRegistrationForm(true)}>
               <PlusCircle className="h-4 w-4 mr-2" />
               Registrar Otro Negocio
@@ -897,121 +1110,125 @@ export default function BusinessDashboard() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="col-span-2">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Store className="h-6 w-6 text-blue-600" />
-                {currentBusiness.name}
-                {currentBusiness.verified && (
-                  <Badge variant="secondary" className="bg-blue-100 text-blue-700">
-                    Verificado
-                  </Badge>
-                )}
-                {currentBusiness.featured && (
-                  <Badge variant="secondary" className="bg-yellow-100 text-yellow-700">
-                    Destacado
-                  </Badge>
-                )}
-              </CardTitle>
-              <CardDescription>{currentBusiness.description}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center gap-4">
-                <img
-                  src={currentBusiness.images[0] || "/placeholder.svg"}
-                  alt={currentBusiness.name}
-                  className="w-24 h-24 object-cover rounded-lg"
-                />
-                <div>
-                  <p className="text-sm text-gray-600">
-                    Categoría: <span className="font-medium">{currentBusiness.category}</span>
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    Plan: <span className="font-medium">{currentBusiness.subscription_plan}</span>
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    Estado:{" "}
-                    <Badge
-                      className={
-                        currentBusiness.status === "active"
-                          ? "bg-green-100 text-green-700"
-                          : "bg-orange-100 text-orange-700"
-                      }
-                    >
-                      {currentBusiness.status}
+        {currentBusiness && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <Card className="col-span-2">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Store className="h-6 w-6 text-blue-600" />
+                  {currentBusiness.name}
+                  {currentBusiness.verified && (
+                    <Badge variant="secondary" className="bg-blue-100 text-blue-700">
+                      Verificado
                     </Badge>
-                  </p>
-                </div>
-              </div>
-              <Separator />
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p className="font-medium">Dirección:</p>
-                  <p>{currentBusiness.address}</p>
-                </div>
-                <div>
-                  <p className="font-medium">Contacto:</p>
-                  <p>Tel: {currentBusiness.phone}</p>
-                  <p>WhatsApp: {currentBusiness.whatsapp}</p>
-                  <p>Email: {currentBusiness.email}</p>
-                </div>
-              </div>
-              <Button className="w-full">Gestionar Perfil del Negocio</Button>
-            </CardContent>
-          </Card>
-
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart className="h-5 w-5 text-purple-600" /> Rendimiento
+                  )}
+                  {currentBusiness.featured && (
+                    <Badge variant="secondary" className="bg-yellow-100 text-yellow-700">
+                      Destacado
+                    </Badge>
+                  )}
                 </CardTitle>
+                <CardDescription>{currentBusiness.description}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div>
-                  <p className="text-sm font-medium">Visitas al Perfil</p>
-                  <Progress value={75} className="w-full" />
-                  <p className="text-xs text-gray-500">750 visitas este mes</p>
+                <div className="flex items-center gap-4">
+                  <img
+                    src={currentBusiness.images[0] || "/placeholder.svg"}
+                    alt={currentBusiness.name}
+                    className="w-24 h-24 object-cover rounded-lg"
+                  />
+                  <div>
+                    <p className="text-sm text-gray-600">
+                      Categoría: <span className="font-medium">{currentBusiness.category}</span>
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      Plan: <span className="font-medium">{currentBusiness.subscription_plan}</span>
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      Estado:{" "}
+                      <Badge
+                        className={
+                          currentBusiness.status === "active"
+                            ? "bg-green-100 text-green-700"
+                            : "bg-orange-100 text-orange-700"
+                        }
+                      >
+                        {currentBusiness.status}
+                      </Badge>
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-medium">Interacciones (Llamadas/Pedidos)</p>
-                  <Progress value={50} className="w-full" />
-                  <p className="text-xs text-gray-500">50 interacciones este mes</p>
+                <Separator />
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="font-medium">Dirección:</p>
+                    <p>{currentBusiness.address}</p>
+                  </div>
+                  <div>
+                    <p className="font-medium">Contacto:</p>
+                    <p>Tel: {currentBusiness.phone}</p>
+                    <p>WhatsApp: {currentBusiness.whatsapp}</p>
+                    <p>Email: {currentBusiness.email}</p>
+                  </div>
                 </div>
-                <Button variant="outline" className="w-full">
-                  Ver Analytics Detallados
+                <Button className="w-full" onClick={() => setCurrentView("profile")}>
+                  Gestionar Perfil del Negocio
                 </Button>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <DollarSign className="h-5 w-5 text-green-600" /> Finanzas
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <p className="text-sm font-medium">Ganancias por Pedidos</p>
-                  <p className="text-lg font-bold text-green-600">$1,250 USDT</p>
-                </div>
-                <div className="flex justify-between items-center">
-                  <p className="text-sm font-medium">Comisiones Pagadas</p>
-                  <p className="text-lg font-bold text-red-600">$125 USDT</p>
-                </div>
-                <Button variant="outline" className="w-full">
-                  Ver Historial de Transacciones
-                </Button>
-              </CardContent>
-            </Card>
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart className="h-5 w-5 text-purple-600" /> Rendimiento
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <p className="text-sm font-medium">Visitas al Perfil</p>
+                    <Progress value={75} className="w-full" />
+                    <p className="text-xs text-gray-500">750 visitas este mes</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Interacciones (Llamadas/Pedidos)</p>
+                    <Progress value={50} className="w-full" />
+                    <p className="text-xs text-gray-500">50 interacciones este mes</p>
+                  </div>
+                  <Button variant="outline" className="w-full" onClick={() => setCurrentView("analytics")}>
+                    Ver Analytics Detallados
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <DollarSign className="h-5 w-5 text-green-600" /> Finanzas
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <p className="text-sm font-medium">Ganancias por Pedidos</p>
+                    <p className="text-lg font-bold text-green-600">$1,250 USDT</p>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <p className="text-sm font-medium">Comisiones Pagadas</p>
+                    <p className="text-lg font-bold text-red-600">$125 USDT</p>
+                  </div>
+                  <Button variant="outline" className="w-full">
+                    Ver Historial de Transacciones
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
           </div>
-        </div>
+        )}
 
         <Card className="mt-8">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Settings className="h-5 w-5 text-gray-600" /> Gestión de Anuncios y Campañas
+              <Megaphone className="h-5 w-5 text-gray-600" /> Gestión de Anuncios y Campañas
             </CardTitle>
             <CardDescription>Crea y gestiona tus campañas publicitarias para llegar a más clientes.</CardDescription>
           </CardHeader>
@@ -1019,20 +1236,13 @@ export default function BusinessDashboard() {
             <Button
               size="lg"
               className="w-full bg-blue-600 hover:bg-blue-700"
-              onClick={() => setShowRegistrationForm(true)}
+              onClick={() => setShowAdCreationForm(true)}
             >
               <PlusCircle className="h-5 w-5 mr-2" />
               Crear Nueva Campaña de Anuncio
             </Button>
             <Separator />
-            <h3 className="text-lg font-semibold mb-2">Mis Campañas Activas</h3>
-            {/* Placeholder for active campaigns list */}
-            <div className="text-center text-gray-500 py-4 border rounded-lg">
-              No tienes campañas activas. ¡Crea una ahora!
-            </div>
-            <Button variant="outline" className="w-full">
-              Ver Todas las Campañas
-            </Button>
+            {renderAdsManagement()} {/* Render the ads management section */}
           </CardContent>
         </Card>
       </div>
