@@ -23,6 +23,7 @@ import {
   Info,
   Edit,
   MoreHorizontal,
+  ImageIcon,
 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -51,8 +52,8 @@ interface BusinessData {
   ownerId: string
   status: "active" | "pending" | "suspended"
   createdAt: Date
-  logo?: string
-  coverImage?: string
+  logoUrl?: string // Updated to logoUrl
+  coverImageUrl?: string // Updated to coverImageUrl
   rating?: number
   reviewsCount?: number
 }
@@ -70,6 +71,7 @@ interface AdCampaign {
   endDate: Date
   targetAudience: string
   adContent: string
+  adBannerUrl?: string // New field for ad banner URL
   createdAt: Date
 }
 
@@ -115,7 +117,8 @@ export default function BusinessDashboard() {
             ownerId: user.id,
             status: "active",
             createdAt: new Date("2024-01-10"),
-            logo: "/placeholder.svg?height=60&width=60",
+            logoUrl: "/placeholder.svg?height=60&width=60", // Use placeholder
+            coverImageUrl: "/placeholder.svg?height=200&width=400", // Use placeholder
             rating: 4.5,
             reviewsCount: 120,
           },
@@ -134,6 +137,7 @@ export default function BusinessDashboard() {
             endDate: new Date("2024-05-31"),
             targetAudience: "Clientes en CDMX",
             adContent: "Gran oferta en todos nuestros productos!",
+            adBannerUrl: "/placeholder.svg?height=150&width=600", // Placeholder for ad banner
             createdAt: new Date("2024-04-25"),
           },
         ])
@@ -151,33 +155,39 @@ export default function BusinessDashboard() {
     }
     setBusinesses([...businesses, newBusiness])
     setShowRegistrationForm(false)
-    // Opcional: Actualizar el user en AuthContext con el businessId
-    // Esto requeriría una función en AuthContext para actualizar el usuario
+    setActiveTab("overview") // Go to overview after registration
     console.log("New business registered:", newBusiness)
   }
 
   const handleCreateAd = (e: React.FormEvent) => {
     e.preventDefault()
-    // Lógica para crear un anuncio
-    console.log("Creating new ad campaign...")
-    setShowCreateAdForm(false)
-    // Simular añadir una nueva campaña
+    const form = e.target as HTMLFormElement
     const newAd: AdCampaign = {
       id: `ad_${Date.now()}`,
       businessId: businesses[0]?.id || "unknown",
-      name: "Nueva Campaña",
-      status: "paused",
-      budget: 100,
+      name: (form.elements.namedItem("adName") as HTMLInputElement).value,
+      status: "active", // Default to active
+      budget: Number.parseFloat((form.elements.namedItem("adBudget") as HTMLInputElement).value),
       spent: 0,
       impressions: 0,
       clicks: 0,
       startDate: new Date(),
-      endDate: new Date(new Date().setDate(new Date().getDate() + 30)),
-      targetAudience: "General",
-      adContent: "Nuevo anuncio creado!",
+      endDate: new Date(
+        new Date().setDate(
+          new Date().getDate() + Number.parseInt((form.elements.namedItem("adDuration") as HTMLInputElement).value),
+        ),
+      ),
+      targetAudience: "General", // Simplified
+      adContent: (form.elements.namedItem("adContent") as HTMLTextAreaElement).value,
+      adBannerUrl:
+        (form.elements.namedItem("adBannerUrl") as HTMLInputElement)?.value || "/placeholder.svg?height=150&width=600", // Get banner URL
       createdAt: new Date(),
     }
     setAdCampaigns([...adCampaigns, newAd])
+    setShowCreateAdForm(false)
+    setActiveTab("ads") // Go to ads view after creation
+    console.log("New ad campaign created:", newAd)
+    alert("Campaña de anuncio creada (simulado)!")
   }
 
   const currentBusiness = businesses.length > 0 ? businesses[0] : null
@@ -237,12 +247,126 @@ export default function BusinessDashboard() {
     )
   }
 
+  // Si estamos en el formulario de creación de anuncio
+  if (showCreateAdForm) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-2xl mx-auto">
+          <CardHeader className="text-center">
+            <div className="flex items-center justify-between mb-4">
+              <Button variant="ghost" size="icon" onClick={() => setShowCreateAdForm(false)}>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="lucide lucide-arrow-left"
+                >
+                  <path d="m12 19-7-7 7-7" />
+                  <path d="M19 12H5" />
+                </svg>
+              </Button>
+              <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-full w-16 h-16 flex items-center justify-center mx-auto">
+                <Megaphone className="h-8 w-8 text-white" />
+              </div>
+              <div className="w-10"></div> {/* Spacer */}
+            </div>
+            <CardTitle className="text-2xl">Crear Nueva Campaña de Anuncio</CardTitle>
+            <p className="text-gray-600">Llega a más clientes con promociones destacadas.</p>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleCreateAd} className="space-y-4">
+              <div>
+                <label htmlFor="adName" className="text-sm font-medium">
+                  Título del Anuncio *
+                </label>
+                <Input id="adName" name="adName" placeholder="Ej: 50% OFF en toda la tienda" required />
+              </div>
+              <div>
+                <label htmlFor="adContent" className="text-sm font-medium">
+                  Descripción *
+                </label>
+                <textarea
+                  id="adContent"
+                  name="adContent"
+                  placeholder="Describe tu promoción..."
+                  rows={3}
+                  className="w-full p-2 border rounded-md"
+                  required
+                ></textarea>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label htmlFor="adBudget" className="text-sm font-medium">
+                    Presupuesto (USDT) *
+                  </label>
+                  <Input id="adBudget" name="adBudget" placeholder="100" type="number" step="0.01" required />
+                </div>
+                <div>
+                  <label htmlFor="adDuration" className="text-sm font-medium">
+                    Duración (días) *
+                  </label>
+                  <Input id="adDuration" name="adDuration" placeholder="7" type="number" required />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="adBannerUrl" className="text-sm font-medium">
+                  URL de Imagen del Banner (Opcional)
+                </label>
+                <div className="relative">
+                  <ImageIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input
+                    id="adBannerUrl"
+                    name="adBannerUrl"
+                    placeholder="https://ejemplo.com/banner.jpg"
+                    type="url"
+                    className="pl-10"
+                  />
+                </div>
+                {/* Preview for ad banner */}
+                {(document.getElementById("adBannerUrl") as HTMLInputElement)?.value && (
+                  <div className="mt-2 flex justify-center">
+                    <img
+                      src={(document.getElementById("adBannerUrl") as HTMLInputElement)?.value || "/placeholder.svg"}
+                      alt="Ad Banner Preview"
+                      className="max-w-full h-24 object-cover border rounded-md"
+                    />
+                  </div>
+                )}
+              </div>
+              <div>
+                <label htmlFor="payment-method" className="text-sm font-medium">
+                  Método de Pago
+                </label>
+                <select id="payment-method" className="w-full p-2 border rounded-md">
+                  <option>USDT (Tether)</option>
+                  <option>Tarjeta de Crédito</option>
+                </select>
+              </div>
+              <Button type="submit" className="w-full bg-purple-600 hover:bg-purple-700">
+                Crear Campaña
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   // Dashboard principal si ya hay un negocio registrado
   return (
     <div className="flex min-h-screen w-full flex-col bg-gray-100">
       <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b bg-white px-4 shrink-0 md:px-6">
         <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
-          <a className="flex items-center gap-2 text-lg font-semibold md:text-base" href="#">
+          <a
+            className="flex items-center gap-2 text-lg font-semibold md:text-base cursor-pointer"
+            onClick={() => setActiveTab("overview")} // Make Store icon clickable to overview
+          >
             <Store className="h-6 w-6" />
             <span className="sr-only">LocalBiz</span>
           </a>
@@ -383,97 +507,59 @@ export default function BusinessDashboard() {
                   </Button>
                 </CardHeader>
                 <CardContent>
-                  {showCreateAdForm ? (
-                    <form onSubmit={handleCreateAd} className="space-y-4 p-4 border rounded-lg bg-gray-50">
-                      <h3 className="text-lg font-semibold">Crear Nueva Campaña de Anuncio</h3>
-                      <div className="space-y-2">
-                        <label htmlFor="adName" className="text-sm font-medium">
-                          Nombre de la Campaña
-                        </label>
-                        <Input id="adName" placeholder="Ej. Campaña de Verano" required />
-                      </div>
-                      <div className="space-y-2">
-                        <label htmlFor="adBudget" className="text-sm font-medium">
-                          Presupuesto
-                        </label>
-                        <Input id="adBudget" type="number" placeholder="500" required />
-                      </div>
-                      <div className="space-y-2">
-                        <label htmlFor="adContent" className="text-sm font-medium">
-                          Contenido del Anuncio
-                        </label>
-                        <textarea
-                          id="adContent"
-                          rows={3}
-                          placeholder="Describe tu anuncio..."
-                          className="w-full p-2 border rounded-md"
-                        ></textarea>
-                      </div>
-                      <div className="flex justify-end gap-2">
-                        <Button type="button" variant="outline" onClick={() => setShowCreateAdForm(false)}>
-                          Cancelar
-                        </Button>
-                        <Button type="submit">Guardar Campaña</Button>
-                      </div>
-                    </form>
-                  ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Campaña</TableHead>
-                          <TableHead className="hidden xl:table-column">Estado</TableHead>
-                          <TableHead className="hidden xl:table-column">Presupuesto</TableHead>
-                          <TableHead className="hidden md:table-column">Impresiones</TableHead>
-                          <TableHead className="hidden md:table-column">Clicks</TableHead>
-                          <TableHead className="text-right">Acciones</TableHead>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Campaña</TableHead>
+                        <TableHead className="hidden xl:table-column">Estado</TableHead>
+                        <TableHead className="hidden xl:table-column">Presupuesto</TableHead>
+                        <TableHead className="hidden md:table-column">Impresiones</TableHead>
+                        <TableHead className="hidden md:table-column">Clicks</TableHead>
+                        <TableHead className="text-right">Acciones</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {adCampaigns.map((campaign) => (
+                        <TableRow key={campaign.id}>
+                          <TableCell>
+                            <div className="font-medium">{campaign.name}</div>
+                            <div className="hidden text-sm text-gray-500 md:inline">{campaign.targetAudience}</div>
+                          </TableCell>
+                          <TableCell className="hidden xl:table-column">
+                            <Badge className="text-xs" variant={campaign.status === "active" ? "default" : "secondary"}>
+                              {campaign.status === "active"
+                                ? "Activa"
+                                : campaign.status === "paused"
+                                  ? "Pausada"
+                                  : "Completada"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="hidden xl:table-column">${campaign.budget.toFixed(2)}</TableCell>
+                          <TableCell className="hidden md:table-column">
+                            {campaign.impressions.toLocaleString()}
+                          </TableCell>
+                          <TableCell className="hidden md:table-column">{campaign.clicks.toLocaleString()}</TableCell>
+                          <TableCell className="text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button size="icon" variant="ghost">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                  <span className="sr-only">Acciones</span>
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem>Ver Detalles</DropdownMenuItem>
+                                <DropdownMenuItem>Editar</DropdownMenuItem>
+                                <DropdownMenuItem>Pausar/Activar</DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem className="text-red-600">Eliminar</DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
                         </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {adCampaigns.map((campaign) => (
-                          <TableRow key={campaign.id}>
-                            <TableCell>
-                              <div className="font-medium">{campaign.name}</div>
-                              <div className="hidden text-sm text-gray-500 md:inline">{campaign.targetAudience}</div>
-                            </TableCell>
-                            <TableCell className="hidden xl:table-column">
-                              <Badge
-                                className="text-xs"
-                                variant={campaign.status === "active" ? "default" : "secondary"}
-                              >
-                                {campaign.status === "active"
-                                  ? "Activa"
-                                  : campaign.status === "paused"
-                                    ? "Pausada"
-                                    : "Completada"}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="hidden xl:table-column">${campaign.budget.toFixed(2)}</TableCell>
-                            <TableCell className="hidden md:table-column">
-                              {campaign.impressions.toLocaleString()}
-                            </TableCell>
-                            <TableCell className="hidden md:table-column">{campaign.clicks.toLocaleString()}</TableCell>
-                            <TableCell className="text-right">
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button size="icon" variant="ghost">
-                                    <MoreHorizontal className="h-4 w-4" />
-                                    <span className="sr-only">Acciones</span>
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem>Ver Detalles</DropdownMenuItem>
-                                  <DropdownMenuItem>Editar</DropdownMenuItem>
-                                  <DropdownMenuItem>Pausar/Activar</DropdownMenuItem>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem className="text-red-600">Eliminar</DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  )}
+                      ))}
+                    </TableBody>
+                  </Table>
                 </CardContent>
               </Card>
               <Card>
@@ -485,7 +571,7 @@ export default function BusinessDashboard() {
                     <>
                       <div className="flex items-center gap-4">
                         <Avatar className="h-16 w-16">
-                          <AvatarImage src={currentBusiness.logo || "/placeholder.svg?height=60&width=60"} />
+                          <AvatarImage src={currentBusiness.logoUrl || "/placeholder.svg?height=60&width=60"} />
                           <AvatarFallback>{currentBusiness.name.charAt(0)}</AvatarFallback>
                         </Avatar>
                         <div>
@@ -547,91 +633,68 @@ export default function BusinessDashboard() {
                 </Button>
               </CardHeader>
               <CardContent>
-                {showCreateAdForm ? (
-                  <form onSubmit={handleCreateAd} className="space-y-4 p-4 border rounded-lg bg-gray-50">
-                    <h3 className="text-lg font-semibold">Crear Nueva Campaña de Anuncio</h3>
-                    <div className="space-y-2">
-                      <label htmlFor="adName" className="text-sm font-medium">
-                        Nombre de la Campaña
-                      </label>
-                      <Input id="adName" placeholder="Ej. Campaña de Verano" required />
-                    </div>
-                    <div className="space-y-2">
-                      <label htmlFor="adBudget" className="text-sm font-medium">
-                        Presupuesto
-                      </label>
-                      <Input id="adBudget" type="number" placeholder="500" required />
-                    </div>
-                    <div className="space-y-2">
-                      <label htmlFor="adContent" className="text-sm font-medium">
-                        Contenido del Anuncio
-                      </label>
-                      <textarea
-                        id="adContent"
-                        rows={3}
-                        placeholder="Describe tu anuncio..."
-                        className="w-full p-2 border rounded-md"
-                      ></textarea>
-                    </div>
-                    <div className="flex justify-end gap-2">
-                      <Button type="button" variant="outline" onClick={() => setShowCreateAdForm(false)}>
-                        Cancelar
-                      </Button>
-                      <Button type="submit">Guardar Campaña</Button>
-                    </div>
-                  </form>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Campaña</TableHead>
-                        <TableHead>Estado</TableHead>
-                        <TableHead>Presupuesto</TableHead>
-                        <TableHead>Impresiones</TableHead>
-                        <TableHead>Clicks</TableHead>
-                        <TableHead className="text-right">Acciones</TableHead>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Campaña</TableHead>
+                      <TableHead>Banner</TableHead> {/* New column for banner */}
+                      <TableHead>Estado</TableHead>
+                      <TableHead>Presupuesto</TableHead>
+                      <TableHead>Impresiones</TableHead>
+                      <TableHead>Clicks</TableHead>
+                      <TableHead className="text-right">Acciones</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {adCampaigns.map((campaign) => (
+                      <TableRow key={campaign.id}>
+                        <TableCell>
+                          <div className="font-medium">{campaign.name}</div>
+                        </TableCell>
+                        <TableCell>
+                          {campaign.adBannerUrl ? (
+                            <img
+                              src={campaign.adBannerUrl || "/placeholder.svg"}
+                              alt="Ad Banner"
+                              className="w-24 h-auto object-cover rounded-md"
+                            />
+                          ) : (
+                            <span className="text-gray-400">Sin banner</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Badge className="text-xs" variant={campaign.status === "active" ? "default" : "secondary"}>
+                            {campaign.status === "active"
+                              ? "Activa"
+                              : campaign.status === "paused"
+                                ? "Pausada"
+                                : "Completada"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>${campaign.budget.toFixed(2)}</TableCell>
+                        <TableCell>{campaign.impressions.toLocaleString()}</TableCell>
+                        <TableCell>{campaign.clicks.toLocaleString()}</TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button size="icon" variant="ghost">
+                                <MoreHorizontal className="h-4 w-4" />
+                                <span className="sr-only">Acciones</span>
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem>Ver Detalles</DropdownMenuItem>
+                              <DropdownMenuItem>Editar</DropdownMenuItem>
+                              <DropdownMenuItem>Pausar/Activar</DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem className="text-red-600">Eliminar</DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {adCampaigns.map((campaign) => (
-                        <TableRow key={campaign.id}>
-                          <TableCell>
-                            <div className="font-medium">{campaign.name}</div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge className="text-xs" variant={campaign.status === "active" ? "default" : "secondary"}>
-                              {campaign.status === "active"
-                                ? "Activa"
-                                : campaign.status === "paused"
-                                  ? "Pausada"
-                                  : "Completada"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>${campaign.budget.toFixed(2)}</TableCell>
-                          <TableCell>{campaign.impressions.toLocaleString()}</TableCell>
-                          <TableCell>{campaign.clicks.toLocaleString()}</TableCell>
-                          <TableCell className="text-right">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button size="icon" variant="ghost">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                  <span className="sr-only">Acciones</span>
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem>Ver Detalles</DropdownMenuItem>
-                                <DropdownMenuItem>Editar</DropdownMenuItem>
-                                <DropdownMenuItem>Pausar/Activar</DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem className="text-red-600">Eliminar</DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
+                    ))}
+                  </TableBody>
+                </Table>
               </CardContent>
             </Card>
           </TabsContent>

@@ -5,7 +5,7 @@ import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Building, MapPin, Phone, Mail, Globe, Tag, Info, AlertCircle } from "lucide-react"
+import { Building, MapPin, Phone, Mail, Globe, Tag, Info, AlertCircle, ImageIcon, Upload } from "lucide-react"
 
 interface BusinessRegistrationProps {
   onRegisterSuccess: (businessData: any) => void
@@ -21,6 +21,8 @@ export default function BusinessRegistration({ onRegisterSuccess, onCancel }: Bu
     email: "",
     website: "",
     description: "",
+    logoUrl: "", // New field for logo URL
+    coverImageUrl: "", // New field for cover image URL
   })
   const [errors, setErrors] = useState<any>({})
   const [generalError, setGeneralError] = useState<string | null>(null)
@@ -49,6 +51,12 @@ export default function BusinessRegistration({ onRegisterSuccess, onCancel }: Bu
       case "description":
         if (!value.trim()) fieldError = "La descripción es obligatoria."
         break
+      case "logoUrl":
+      case "coverImageUrl":
+        if (value.trim() && !/^https?:\/\/\S+\.(png|jpg|jpeg|gif|svg)$/i.test(value)) {
+          fieldError = "URL de imagen inválida (solo .png, .jpg, .jpeg, .gif, .svg)."
+        }
+        break
       default:
         break
     }
@@ -68,22 +76,31 @@ export default function BusinessRegistration({ onRegisterSuccess, onCancel }: Bu
     console.log("Attempting to submit business registration form.")
     setGeneralError(null)
     let formIsValid = true
-    const newErrors: any = {}
+    const currentErrors: any = {} // Usar un objeto temporal para acumular errores
 
-    // Validar todos los campos obligatorios
-    const fieldsToValidate = ["name", "category", "address", "phone", "email", "description"]
+    // Validar todos los campos obligatorios y los de imagen
+    const fieldsToValidate = [
+      "name",
+      "category",
+      "address",
+      "phone",
+      "email",
+      "description",
+      "logoUrl",
+      "coverImageUrl",
+    ]
     fieldsToValidate.forEach((field) => {
       if (!validateField(field, (formData as any)[field])) {
         formIsValid = false
-        newErrors[field] = errors[field] || "Campo obligatorio." // Usar el error ya generado o un genérico
+        currentErrors[field] = errors[field] || "Campo obligatorio."
       }
     })
 
-    setErrors(newErrors)
+    setErrors(currentErrors) // Actualizar el estado de errores con todos los errores acumulados
 
     if (!formIsValid) {
       setGeneralError("Por favor, corrige los errores en el formulario.")
-      console.log("Form validation failed:", newErrors)
+      console.log("Form validation failed:", currentErrors)
       return
     }
 
@@ -235,6 +252,69 @@ export default function BusinessRegistration({ onRegisterSuccess, onCancel }: Bu
                   onChange={handleChange}
                   className="pl-10"
                 />
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4 border-t pt-6">
+            <h3 className="text-lg font-semibold flex items-center">
+              <ImageIcon className="h-5 w-5 mr-2" /> Imágenes del Negocio
+            </h3>
+            <p className="text-sm text-gray-600">
+              Pega la URL de tus imágenes. Para subir archivos, necesitarías un backend.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label htmlFor="logoUrl" className="text-sm font-medium">
+                  URL del Logo *
+                </label>
+                <div className="relative">
+                  <Upload className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input
+                    id="logoUrl"
+                    name="logoUrl"
+                    placeholder="https://ejemplo.com/logo.png"
+                    value={formData.logoUrl}
+                    onChange={handleChange}
+                    className="pl-10"
+                  />
+                </div>
+                {errors.logoUrl && <p className="text-red-600 text-xs mt-1">{errors.logoUrl}</p>}
+                {formData.logoUrl && !errors.logoUrl && (
+                  <div className="mt-2 flex justify-center">
+                    <img
+                      src={formData.logoUrl || "/placeholder.svg"}
+                      alt="Logo Preview"
+                      className="max-w-[100px] max-h-[100px] object-contain border rounded-md"
+                    />
+                  </div>
+                )}
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="coverImageUrl" className="text-sm font-medium">
+                  URL de Imagen de Portada (Opcional)
+                </label>
+                <div className="relative">
+                  <Upload className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input
+                    id="coverImageUrl"
+                    name="coverImageUrl"
+                    placeholder="https://ejemplo.com/portada.jpg"
+                    value={formData.coverImageUrl}
+                    onChange={handleChange}
+                    className="pl-10"
+                  />
+                </div>
+                {errors.coverImageUrl && <p className="text-red-600 text-xs mt-1">{errors.coverImageUrl}</p>}
+                {formData.coverImageUrl && !errors.coverImageUrl && (
+                  <div className="mt-2 flex justify-center">
+                    <img
+                      src={formData.coverImageUrl || "/placeholder.svg"}
+                      alt="Cover Image Preview"
+                      className="max-w-full h-32 object-cover border rounded-md"
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </div>
