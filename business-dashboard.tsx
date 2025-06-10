@@ -24,6 +24,8 @@ import {
   Edit,
   MoreHorizontal,
   ImageIcon,
+  Sparkles,
+  Loader2,
 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -95,6 +97,12 @@ export default function BusinessDashboard() {
   const [showCreateAdForm, setShowCreateAdForm] = useState(false)
   const [businesses, setBusinesses] = useState<BusinessData[]>([]) // Simular negocios del usuario
   const [adCampaigns, setAdCampaigns] = useState<AdCampaign[]>([]) // Simular campañas de anuncios
+
+  // New state for AI banner generation
+  const [aiBannerPrompt, setAiBannerPrompt] = useState("")
+  const [generatedBannerUrl, setGeneratedBannerUrl] = useState("")
+  const [isGeneratingBanner, setIsGeneratingBanner] = useState(false)
+  const [bannerGenerationError, setBannerGenerationError] = useState<string | null>(null)
 
   useEffect(() => {
     // Simular carga de negocios y campañas al iniciar
@@ -188,6 +196,44 @@ export default function BusinessDashboard() {
     setActiveTab("ads") // Go to ads view after creation
     console.log("New ad campaign created:", newAd)
     alert("Campaña de anuncio creada (simulado)!")
+  }
+
+  const handleGenerateBanner = async () => {
+    if (!aiBannerPrompt.trim()) {
+      setBannerGenerationError("Por favor, ingresa una descripción para el banner.")
+      return
+    }
+    setIsGeneratingBanner(true)
+    setBannerGenerationError(null)
+    setGeneratedBannerUrl("") // Clear previous generated URL
+
+    try {
+      const response = await fetch("/api/generate-banner", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ prompt: aiBannerPrompt }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Error al generar el banner con IA.")
+      }
+
+      const data = await response.json()
+      setGeneratedBannerUrl(data.imageUrl)
+      // Automatically populate the adBannerUrl input field
+      const adBannerUrlInput = document.getElementById("adBannerUrl") as HTMLInputElement
+      if (adBannerUrlInput) {
+        adBannerUrlInput.value = data.imageUrl
+      }
+    } catch (error: any) {
+      console.error("Failed to generate banner:", error)
+      setBannerGenerationError(error.message || "Error desconocido al generar el banner.")
+    } finally {
+      setIsGeneratingBanner(false)
+    }
   }
 
   const currentBusiness = businesses.length > 0 ? businesses[0] : null
@@ -314,6 +360,53 @@ export default function BusinessDashboard() {
                   <Input id="adDuration" name="adDuration" placeholder="7" type="number" required />
                 </div>
               </div>
+
+              {/* AI Banner Generation Section */}
+              <div className="space-y-2 p-4 border rounded-lg bg-purple-50/20">
+                <h3 className="font-semibold text-purple-800 flex items-center">
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Generar Banner con IA
+                </h3>
+                <p className="text-sm text-gray-700">
+                  Describe el banner que deseas crear (ej: "un perro feliz comiendo pizza").
+                </p>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Descripción del banner para IA..."
+                    value={aiBannerPrompt}
+                    onChange={(e) => setAiBannerPrompt(e.target.value)}
+                    disabled={isGeneratingBanner}
+                  />
+                  <Button
+                    type="button"
+                    onClick={handleGenerateBanner}
+                    disabled={isGeneratingBanner || !aiBannerPrompt.trim()}
+                    className="bg-purple-600 hover:bg-purple-700"
+                  >
+                    {isGeneratingBanner ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Generando...
+                      </>
+                    ) : (
+                      "Generar"
+                    )}
+                  </Button>
+                </div>
+                {bannerGenerationError && <p className="text-red-600 text-sm mt-2">{bannerGenerationError}</p>}
+                {generatedBannerUrl && (
+                  <div className="mt-4 text-center">
+                    <p className="text-sm font-medium mb-2">Banner Generado (se ha copiado al campo de URL):</p>
+                    <img
+                      src={generatedBannerUrl || "/placeholder.svg"}
+                      alt="Generated Ad Banner"
+                      className="max-w-full h-32 object-contain border rounded-md mx-auto"
+                    />
+                  </div>
+                )}
+              </div>
+              {/* End AI Banner Generation Section */}
+
               <div className="space-y-2">
                 <label htmlFor="adBannerUrl" className="text-sm font-medium">
                   URL de Imagen del Banner (Opcional)
@@ -326,6 +419,7 @@ export default function BusinessDashboard() {
                     placeholder="https://ejemplo.com/banner.jpg"
                     type="url"
                     className="pl-10"
+                    defaultValue={generatedBannerUrl} // Set default value from AI generated URL
                   />
                 </div>
                 {/* Preview for ad banner */}
