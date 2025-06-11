@@ -31,10 +31,13 @@ export async function GET(request: NextRequest) {
     if (error) {
       // Si Supabase devuelve un error, lo registramos y devolvemos una respuesta JSON de error.
       console.error("Supabase GET businesses error details:", error)
-      return NextResponse.json(
-        { error: error.message || "Failed to fetch businesses from Supabase due to an unknown error." },
-        { status: 500 },
-      )
+      // Aseguramos que el mensaje de error sea siempre una cadena, incluso si el objeto 'error' de Supabase no es un Error estándar.
+      const errorMessage =
+        typeof error === "object" && error !== null && "message" in error
+          ? String(error.message)
+          : JSON.stringify(error) // Intentamos stringificar el objeto completo si no tiene 'message'
+
+      return NextResponse.json({ error: `Failed to fetch businesses from Supabase: ${errorMessage}` }, { status: 500 })
     }
 
     return NextResponse.json({ businesses, success: true })
@@ -84,10 +87,11 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error("Supabase POST business error details:", error)
-      return NextResponse.json(
-        { error: error.message || "Failed to create business in Supabase due to an unknown error." },
-        { status: 500 },
-      )
+      const errorMessage =
+        typeof error === "object" && error !== null && "message" in error
+          ? String(error.message)
+          : JSON.stringify(error)
+      return NextResponse.json({ error: `Failed to create business in Supabase: ${errorMessage}` }, { status: 500 })
     }
 
     return NextResponse.json({ business, success: true })
@@ -114,10 +118,11 @@ export async function PUT(request: NextRequest) {
 
     if (error) {
       console.error("Supabase PUT business error details:", error)
-      return NextResponse.json(
-        { error: error.message || "Failed to update business in Supabase due to an unknown error." },
-        { status: 500 },
-      )
+      const errorMessage =
+        typeof error === "object" && error !== null && "message" in error
+          ? String(error.message)
+          : JSON.stringify(error)
+      return NextResponse.json({ error: `Failed to update business in Supabase: ${errorMessage}` }, { status: 500 })
     }
 
     return NextResponse.json({ business, success: true })
