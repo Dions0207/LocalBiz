@@ -29,13 +29,24 @@ export async function GET(request: NextRequest) {
     const { data: businesses, error } = await query
 
     if (error) {
-      throw error
+      // Si Supabase devuelve un error, lo registramos y devolvemos una respuesta JSON de error.
+      console.error("Supabase GET businesses error details:", error)
+      return NextResponse.json(
+        { error: error.message || "Failed to fetch businesses from Supabase due to an unknown error." },
+        { status: 500 },
+      )
     }
 
     return NextResponse.json({ businesses, success: true })
-  } catch (error) {
-    console.error("Get businesses error:", error)
-    return NextResponse.json({ error: "Failed to fetch businesses" }, { status: 500 })
+  } catch (e: any) {
+    // Capturamos cualquier error inesperado durante la ejecución de la ruta API.
+    console.error("Get businesses API route unexpected error:", e)
+    // Aseguramos que el mensaje de error sea siempre una cadena.
+    const errorMessage = e instanceof Error ? e.message : String(e)
+    return NextResponse.json(
+      { error: `An unexpected error occurred in the API route: ${errorMessage}` },
+      { status: 500 },
+    )
   }
 }
 
@@ -43,14 +54,14 @@ export async function POST(request: NextRequest) {
   try {
     const businessData = await request.json()
 
-    // IMPORTANT: You need to get the actual user ID from the session/auth context here.
-    // For now, I'm using a placeholder. In a real app, you'd get it from a JWT or session.
-    // Example (if using a session management library or Next.js auth):
-    // const { user } = await getSession(); // Or similar
+    // IMPORTANTE: Debes obtener el ID de usuario real del contexto de sesión/autenticación aquí.
+    // Por ahora, estoy usando un marcador de posición. En una aplicación real, lo obtendrías de un JWT o sesión.
+    // Ejemplo (si usas una librería de gestión de sesiones o autenticación de Next.js):
+    // const { user } = await getSession(); // O similar
     // if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     // const owner_id = user.id;
 
-    const owner_id = businessData.owner_id || "dummy_owner_id_123" // Replace with actual user ID logic
+    const owner_id = businessData.owner_id || "dummy_owner_id_123" // Reemplazar con la lógica real del ID de usuario
 
     const { data: business, error } = await supabase
       .from("businesses")
@@ -64,21 +75,29 @@ export async function POST(request: NextRequest) {
           rating: 0,
           review_count: 0,
           subscription_plan: "free",
-          logo_url: businessData.logoUrl, // Map frontend field to DB field
-          cover_image_url: businessData.coverImageUrl, // Map frontend field to DB field
+          logo_url: businessData.logoUrl, // Mapear campo del frontend al campo de la DB
+          cover_image_url: businessData.coverImageUrl, // Mapear campo del frontend al campo de la DB
         },
       ])
       .select()
       .single()
 
     if (error) {
-      throw error
+      console.error("Supabase POST business error details:", error)
+      return NextResponse.json(
+        { error: error.message || "Failed to create business in Supabase due to an unknown error." },
+        { status: 500 },
+      )
     }
 
     return NextResponse.json({ business, success: true })
-  } catch (error) {
-    console.error("Create business error:", error)
-    return NextResponse.json({ error: "Failed to create business" }, { status: 500 })
+  } catch (e: any) {
+    console.error("Create business API route unexpected error:", e)
+    const errorMessage = e instanceof Error ? e.message : String(e)
+    return NextResponse.json(
+      { error: `An unexpected error occurred in the API route: ${errorMessage}` },
+      { status: 500 },
+    )
   }
 }
 
@@ -94,12 +113,20 @@ export async function PUT(request: NextRequest) {
       .single()
 
     if (error) {
-      throw error
+      console.error("Supabase PUT business error details:", error)
+      return NextResponse.json(
+        { error: error.message || "Failed to update business in Supabase due to an unknown error." },
+        { status: 500 },
+      )
     }
 
     return NextResponse.json({ business, success: true })
-  } catch (error) {
-    console.error("Update business error:", error)
-    return NextResponse.json({ error: "Failed to update business" }, { status: 500 })
+  } catch (e: any) {
+    console.error("Update business API route unexpected error:", e)
+    const errorMessage = e instanceof Error ? e.message : String(e)
+    return NextResponse.json(
+      { error: `An unexpected error occurred in the API route: ${errorMessage}` },
+      { status: 500 },
+    )
   }
 }
