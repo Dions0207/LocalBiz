@@ -21,14 +21,14 @@ export default function BusinessRegistration({ onRegisterSuccess, onCancel }: Bu
     email: "",
     website: "",
     description: "",
-    logoUrl: "", // This will store the Blob URL after upload
-    coverImageUrl: "", // This will store the Blob URL after upload
+    logoUrl: "", // This will store the Supabase Storage URL after upload
+    coverImageUrl: "", // This will store the Supabase Storage URL after upload
   })
   const [errors, setErrors] = useState<any>({})
   const [generalError, setGeneralError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [isUploadingLogo, setIsUploadingLogo] = useState(false) // New state for logo upload progress
-  const [isUploadingCover, setIsUploadingCover] = useState(false) // New state for cover image upload progress
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false) // State for logo upload progress
+  const [isUploadingCover, setIsUploadingCover] = useState(false) // State for cover image upload progress
   const [logoPreview, setLogoPreview] = useState<string | null>(null) // For local preview before upload
   const [coverImagePreview, setCoverImagePreview] = useState<string | null>(null) // For local preview before upload
 
@@ -55,7 +55,6 @@ export default function BusinessRegistration({ onRegisterSuccess, onCancel }: Bu
       case "description":
         if (!value.trim()) fieldError = "La descripción es obligatoria."
         break
-      // Removed URL validation for logoUrl and coverImageUrl as they will be handled by file upload
       default:
         break
     }
@@ -70,9 +69,9 @@ export default function BusinessRegistration({ onRegisterSuccess, onCancel }: Bu
     setGeneralError(null)
   }
 
-  // New handler for file uploads
+  // New handler for file uploads using Supabase Storage API
   const handleFileUpload = useCallback(
-    async (event: React.ChangeEvent<HTMLInputElement>, fieldName: "logoUrl" | "coverImageUrl") => {
+    async (event: React.ChangeEvent<HTMLInputElement>, fieldName: "logoUrl" | "coverImageUrl", folderName: string) => {
       const file = event.target.files?.[0]
       if (!file) return
 
@@ -91,9 +90,14 @@ export default function BusinessRegistration({ onRegisterSuccess, onCancel }: Bu
       setStateUploading(true)
 
       try {
-        const response = await fetch(`/api/upload-image?filename=${file.name}`, {
+        const uploadFormData = new FormData()
+        uploadFormData.append("file", file)
+        uploadFormData.append("folder", folderName) // Pass the folder name for Supabase bucket organization
+
+        const response = await fetch(`/api/upload-image-supabase`, {
+          // Call the new Supabase upload API
           method: "POST",
-          body: file, // Send the file directly in the body
+          body: uploadFormData,
         })
 
         if (!response.ok) {
@@ -103,9 +107,9 @@ export default function BusinessRegistration({ onRegisterSuccess, onCancel }: Bu
           )
         }
 
-        const blob = await response.json()
-        setFormData((prevData) => ({ ...prevData, [fieldName]: blob.url })) // Store the Blob URL
-        console.log(`File uploaded successfully for ${fieldName}:`, blob.url)
+        const result = await response.json()
+        setFormData((prevData) => ({ ...prevData, [fieldName]: result.url })) // Store the Supabase public URL
+        console.log(`File uploaded successfully for ${fieldName}:`, result.url)
       } catch (error: any) {
         console.error(`Error uploading ${fieldName}:`, error)
         setErrors((prevErrors: any) => ({ ...prevErrors, [fieldName]: error.message || "Error al subir la imagen." }))
@@ -341,11 +345,11 @@ export default function BusinessRegistration({ onRegisterSuccess, onCancel }: Bu
                   <Input
                     id="logoUpload"
                     name="logoUpload"
-                    type="file" // Changed to file input
-                    accept="image/*" // Accept only image files
-                    onChange={(e) => handleFileUpload(e, "logoUrl")}
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleFileUpload(e, "logoUrl", "logos")} // Pass 'logos' as folder name
                     className="pl-10 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"
-                    disabled={isUploadingLogo} // Disable input while uploading
+                    disabled={isUploadingLogo}
                   />
                   {isUploadingLogo && (
                     <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 rounded-md">
@@ -373,11 +377,11 @@ export default function BusinessRegistration({ onRegisterSuccess, onCancel }: Bu
                   <Input
                     id="coverImageUpload"
                     name="coverImageUpload"
-                    type="file" // Changed to file input
-                    accept="image/*" // Accept only image files
-                    onChange={(e) => handleFileUpload(e, "coverImageUrl")}
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleFileUpload(e, "coverImageUrl", "cover-images")} // Pass 'cover-images' as folder name
                     className="pl-10 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"
-                    disabled={isUploadingCover} // Disable input while uploading
+                    disabled={isUploadingCover}
                   />
                   {isUploadingCover && (
                     <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 rounded-md">
